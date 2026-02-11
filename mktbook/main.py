@@ -53,6 +53,7 @@ async def main() -> None:
         port=settings.port,
         log_level="info",
         loop="asyncio",
+        ws="wsproto",
     )
     server = uvicorn.Server(config)
 

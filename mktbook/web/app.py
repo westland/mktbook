@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pathlib
 
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -15,6 +15,16 @@ TEMPLATES = Jinja2Templates(directory=str(_WEB_DIR / "templates"))
 
 def create_app(ws: WSManager) -> FastAPI:
     app = FastAPI(title="MktBook Bot Marketplace")
+
+    # WebSocket endpoint — register FIRST before routers
+    @app.websocket("/ws")
+    async def websocket_endpoint(websocket: WebSocket) -> None:
+        await ws.connect(websocket)
+        try:
+            while True:
+                await websocket.receive_text()
+        except WebSocketDisconnect:
+            ws.disconnect(websocket)
 
     app.mount("/static", StaticFiles(directory=str(_WEB_DIR / "static")), name="static")
 
@@ -30,17 +40,5 @@ def create_app(ws: WSManager) -> FastAPI:
 
     app.include_router(api_router)
     app.include_router(pages_router)
-
-    # WebSocket endpoint
-    from fastapi import WebSocket as WS, WebSocketDisconnect
-
-    @app.websocket("/ws")
-    async def websocket_endpoint(websocket: WS) -> None:
-        await ws.connect(websocket)
-        try:
-            while True:
-                await websocket.receive_text()
-        except WebSocketDisconnect:
-            ws.disconnect(websocket)
 
     return app

@@ -5,13 +5,20 @@
     const wsUrl = `${protocol}//${location.host}/ws`;
     let ws = null;
     let reconnectDelay = 1000;
+    let maxRetries = 5;
+    let retryCount = 0;
 
     function connect() {
+        if (retryCount >= maxRetries) {
+            console.log('MktBook WS: max retries reached, using auto-refresh');
+            return;
+        }
         ws = new WebSocket(wsUrl);
 
         ws.onopen = function() {
             console.log('MktBook WS connected');
             reconnectDelay = 1000;
+            retryCount = 0;
         };
 
         ws.onmessage = function(event) {
@@ -20,7 +27,8 @@
         };
 
         ws.onclose = function() {
-            console.log('MktBook WS disconnected, reconnecting in', reconnectDelay, 'ms');
+            retryCount++;
+            console.log('MktBook WS disconnected, retry', retryCount, '/', maxRetries);
             setTimeout(connect, reconnectDelay);
             reconnectDelay = Math.min(reconnectDelay * 2, 30000);
         };

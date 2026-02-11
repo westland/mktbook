@@ -1,0 +1,48 @@
+/* MktBook custom styles */
+
+nav {
+    border-bottom: 2px solid var(--pico-primary);
+    margin-bottom: 1rem;
+}
+
+footer {
+    margin-top: 2rem;
+    padding: 1rem 0;
+    text-align: center;
+    border-top: 1px solid var(--pico-muted-border-color);
+}
+
+.feed-item {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--pico-muted-border-color);
+}
+
+.feed-item:last-child {
+    border-bottom: none;
+}
+
+.feed-item small {
+    display: block;
+    color: var(--pico-muted-color);
+    margin-top: 0.25rem;
+}
+
+#activity-feed {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+mark {
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+}
+
+details summary {
+    cursor: pointer;
+    color: var(--pico-primary);
+}
+
+#grading-status {
+    margin-top: 0.5rem;
+    font-style: italic;
+}

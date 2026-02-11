@@ -1,0 +1,26 @@
+[Unit]
+Description=MktBook Bot Marketplace
+After=network.target
+
+[Service]
+Type=simple
+User=mktbook
+Group=mktbook
+WorkingDirectory=/opt/mktbook
+ExecStart=/opt/mktbook/venv/bin/python -m mktbook.main
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Environment
+EnvironmentFile=/opt/mktbook/mktbook/.env
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/mktbook
+
+[Install]
+WantedBy=multi-user.target

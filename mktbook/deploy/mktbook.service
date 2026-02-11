@@ -6,15 +6,12 @@ After=network.target
 Type=simple
 User=mktbook
 Group=mktbook
-WorkingDirectory=/opt/mktbook
+WorkingDirectory=/opt/mktbook/repo
 ExecStart=/opt/mktbook/venv/bin/python -m mktbook.main
 Restart=always
 RestartSec=5
 StandardOutput=journal
 StandardError=journal
-
-# Environment
-EnvironmentFile=/opt/mktbook/mktbook/.env
 
 # Hardening
 NoNewPrivileges=true

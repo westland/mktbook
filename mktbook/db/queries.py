@@ -16,6 +16,7 @@ def _row_to_bot(row: Any) -> Bot:
         objective=row["objective"],
         behavior_rules=row["behavior_rules"],
         is_active=bool(row["is_active"]),
+        workout_id=row["workout_id"] if "workout_id" in row.keys() else 1,
         created_at=row["created_at"],
     )
 
@@ -73,12 +74,13 @@ async def create_bot(
     personality: str = "",
     objective: str = "",
     behavior_rules: str = "",
+    workout_id: int = 1,
 ) -> Bot:
     db = await get_db()
     cursor = await db.execute(
-        """INSERT INTO bots (student_name, bot_name, discord_token, personality, objective, behavior_rules)
-           VALUES (?, ?, ?, ?, ?, ?)""",
-        (student_name, bot_name, discord_token, personality, objective, behavior_rules),
+        """INSERT INTO bots (student_name, bot_name, discord_token, personality, objective, behavior_rules, workout_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        (student_name, bot_name, discord_token, personality, objective, behavior_rules, workout_id),
     )
     await db.commit()
     row = await (await db.execute("SELECT * FROM bots WHERE id = ?", (cursor.lastrowid,))).fetchone()
@@ -97,22 +99,32 @@ async def get_bot_by_name(bot_name: str) -> Bot | None:
     return _row_to_bot(row) if row else None
 
 
-async def get_all_bots() -> list[Bot]:
+async def get_all_bots(workout_id: int | None = None) -> list[Bot]:
     db = await get_db()
-    rows = await (await db.execute("SELECT * FROM bots ORDER BY created_at DESC")).fetchall()
+    if workout_id is not None:
+        rows = await (await db.execute(
+            "SELECT * FROM bots WHERE workout_id = ? ORDER BY created_at DESC", (workout_id,)
+        )).fetchall()
+    else:
+        rows = await (await db.execute("SELECT * FROM bots ORDER BY created_at DESC")).fetchall()
     return [_row_to_bot(r) for r in rows]
 
 
-async def get_active_bots() -> list[Bot]:
+async def get_active_bots(workout_id: int | None = None) -> list[Bot]:
     db = await get_db()
-    rows = await (await db.execute("SELECT * FROM bots WHERE is_active = 1 ORDER BY bot_name")).fetchall()
+    if workout_id is not None:
+        rows = await (await db.execute(
+            "SELECT * FROM bots WHERE is_active = 1 AND workout_id = ? ORDER BY bot_name", (workout_id,)
+        )).fetchall()
+    else:
+        rows = await (await db.execute("SELECT * FROM bots WHERE is_active = 1 ORDER BY bot_name")).fetchall()
     return [_row_to_bot(r) for r in rows]
 
 
 async def update_bot(bot_id: int, **fields: Any) -> Bot | None:
     if not fields:
         return await get_bot(bot_id)
-    allowed = {"student_name", "bot_name", "discord_token", "personality", "objective", "behavior_rules", "is_active"}
+    allowed = {"student_name", "bot_name", "discord_token", "personality", "objective", "behavior_rules", "is_active", "workout_id"}
     filtered = {k: v for k, v in fields.items() if k in allowed}
     if not filtered:
         return await get_bot(bot_id)

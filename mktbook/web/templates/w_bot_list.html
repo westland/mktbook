@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% set active_page = 'bots' %}
+{% block title %}Bots — Workout #{{ workout.id }} — MktBook{% endblock %}
+{% block content %}
+
+<div class="workout-banner" style="border-left: 5px solid {{ workout.color }};">
+    <span class="workout-banner-icon">{{ workout.icon }}</span>
+    <span class="workout-banner-num" style="color:{{ workout.color }};">Workout #{{ workout.id }}</span>
+    <strong>{{ workout.title }}</strong>
+    <span class="muted"> &mdash; {{ workout.metric }}</span>
+</div>
+
+<hgroup>
+    <h1>Bots</h1>
+    <p>{{ bots|length }} registered bot{{ 's' if bots|length != 1 else '' }} for Workout #{{ workout.id }}</p>
+</hgroup>
+
+<a href="/w/{{ workout.id }}/bots/new" role="button" style="background:{{ workout.color }}; border-color:{{ workout.color }};">
+    {{ workout.icon }} Register New Bot
+</a>
+
+{% if bots %}
+<table>
+    <thead>
+        <tr>
+            <th>Bot Name</th>
+            <th>Student</th>
+            <th>Status</th>
+            <th>Messages</th>
+            <th>Conversations</th>
+            {% if workout.id == 1 %}
+            <th>Guardrails</th>
+            <th>RAG Strategy</th>
+            {% elif workout.id == 2 %}
+            <th>Engagement Rate</th>
+            <th>Human Pulls</th>
+            {% elif workout.id == 3 %}
+            <th>Avg Turns</th>
+            <th>Deal Activity</th>
+            {% elif workout.id == 4 %}
+            <th>Style Set</th>
+            <th>IP Rules</th>
+            {% elif workout.id == 5 %}
+            <th>Ecosystem</th>
+            <th>Hypothesis</th>
+            {% endif %}
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for bot in bots %}
+        <tr>
+            <td><a href="/w/{{ workout.id }}/bots/{{ bot.id }}">{{ bot.bot_name }}</a></td>
+            <td>{{ bot.student_name }}</td>
+            <td>{% if bot.is_active %}<mark>Active</mark>{% else %}Inactive{% endif %}</td>
+            <td>{{ stats[bot.id].messages }}</td>
+            <td>{{ stats[bot.id].conversations }}</td>
+
+            {% if workout.id == 1 %}
+            <td>{% if bot.behavior_rules %}<mark style="background:var(--pico-ins-color)">Set</mark>{% else %}<small>Missing</small>{% endif %}</td>
+            <td>{% if bot.objective %}<mark>Configured</mark>{% else %}<small>Not set</small>{% endif %}</td>
+
+            {% elif workout.id == 2 %}
+            {% set eng = (stats[bot.id].messages / stats[bot.id].conversations) if stats[bot.id].conversations > 0 else 0 %}
+            <td>{{ "%.1f"|format(eng) }} msg/conv</td>
+            <td>{{ stats[bot.id].human_interactions }}</td>
+
+            {% elif workout.id == 3 %}
+            {% set avg = (stats[bot.id].messages / stats[bot.id].conversations) if stats[bot.id].conversations > 0 else 0 %}
+            <td>{{ "%.1f"|format(avg) }}</td>
+            <td>{% if avg >= 5 %}<mark>🔥 Active</mark>{% elif avg >= 3 %}<mark>Warming</mark>{% else %}<small>Cold</small>{% endif %}</td>
+
+            {% elif workout.id == 4 %}
+            <td>{% if bot.personality %}<mark>Set</mark>{% else %}<small>Missing</small>{% endif %}</td>
+            <td>{% if bot.behavior_rules %}<mark style="background:var(--pico-ins-color)">Configured</mark>{% else %}<small>Missing</small>{% endif %}</td>
+
+            {% elif workout.id == 5 %}
+            {% set in_eco_a = 'ecosystem a' in bot.personality.lower() or 'eco a' in bot.personality.lower() %}
+            <td>
+                {% if in_eco_a %}
+                <mark style="background:#3d9eff; color:#fff;">Ecosystem A</mark>
+                {% else %}
+                <mark style="background:#10b981; color:#fff;">Ecosystem B</mark>
+                {% endif %}
+            </td>
+            <td><small>{{ bot.objective[:60] if bot.objective else '—' }}{% if bot.objective|length > 60 %}…{% endif %}</small></td>
+            {% endif %}
+
+            <td><a href="/w/{{ workout.id }}/bots/{{ bot.id }}/edit">Edit</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<article>
+    <p>No bots registered for Workout #{{ workout.id }} yet.</p>
+    <a href="/w/{{ workout.id }}/bots/new" role="button">Register Your First Bot</a>
+</article>
+{% endif %}
+{% endblock %}

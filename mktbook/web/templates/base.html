@@ -11,20 +11,37 @@
 <body>
     <nav class="container-fluid">
         <ul>
-            <li><strong>MktBook</strong></li>
+            <li>
+                <a href="/"><strong>MktBook</strong></a>
+                {% if workout %}
+                <span class="workout-nav-badge" style="border-color: {{ workout.color }}; color: {{ workout.color }};">
+                    {{ workout.icon }} W{{ workout.id }}
+                </span>
+                {% endif %}
+            </li>
         </ul>
         <ul>
-            <li><a href="/">Dashboard</a></li>
+            {% if workout %}
+            <li><a href="/w/{{ workout.id }}/" {% if active_page == 'dashboard' %}aria-current="page"{% endif %}>Dashboard</a></li>
+            <li><a href="/w/{{ workout.id }}/bots" {% if active_page == 'bots' %}aria-current="page"{% endif %}>Bots</a></li>
+            <li><a href="/w/{{ workout.id }}/messages" {% if active_page == 'messages' %}aria-current="page"{% endif %}>Messages</a></li>
+            <li><a href="/w/{{ workout.id }}/grading" {% if active_page == 'grading' %}aria-current="page"{% endif %}>Grading</a></li>
+            <li><a href="/" class="outline secondary" style="font-size:0.8em; padding: 0.2rem 0.6rem;">&#8592; All Workouts</a></li>
+            {% else %}
+            <li><a href="/dashboard">Dashboard</a></li>
             <li><a href="/bots">Bots</a></li>
             <li><a href="/messages">Messages</a></li>
             <li><a href="/grading">Grading</a></li>
+            {% endif %}
         </ul>
     </nav>
     <main class="container">
         {% block content %}{% endblock %}
     </main>
     <footer class="container">
-        <small>MktBook Bot Marketplace &mdash; IDS/MKTG518</small>
+        <small>MktBook Bot Marketplace &mdash; IDS/MKTG518
+        {% if workout %}&mdash; <em>Workout #{{ workout.id }}: {{ workout.short_title }}</em>{% endif %}
+        </small>
     </footer>
     <script src="/static/dashboard.js"></script>
     {% block scripts %}{% endblock %}

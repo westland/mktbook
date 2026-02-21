@@ -13,6 +13,7 @@ class Bot:
     objective: str
     behavior_rules: str
     is_active: bool
+    workout_id: int
     created_at: str
 
 

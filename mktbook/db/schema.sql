@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS bots (
     objective       TEXT    NOT NULL DEFAULT '',
     behavior_rules  TEXT    NOT NULL DEFAULT '',
     is_active       INTEGER NOT NULL DEFAULT 1,
+    workout_id      INTEGER NOT NULL DEFAULT 1,
     created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 

@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% set active_page = 'grading' %}
+{% block title %}Grading — Workout #{{ workout.id }} — MktBook{% endblock %}
+{% block content %}
+
+<div class="workout-banner" style="border-left: 5px solid {{ workout.color }};">
+    <span class="workout-banner-icon">{{ workout.icon }}</span>
+    <span class="workout-banner-num" style="color:{{ workout.color }};">Workout #{{ workout.id }}: {{ workout.title }}</span>
+    <br>
+    <small class="muted">{{ workout.grading_note }}</small>
+</div>
+
+<h1>Grading</h1>
+
+<article>
+    <header>Run Grading for Workout #{{ workout.id }}</header>
+    <p>
+        {% if workout.id == 1 %}
+        Grade all bots on <strong>Brand Safety</strong>, RAG reliability, conversation quality, and uptime. Bots with missing guardrails will be penalized.
+        {% elif workout.id == 2 %}
+        Grade all bots on <strong>Engagement</strong> — Share of Conversation, thread depth, and human interaction rate. Volume and human scores carry extra weight.
+        {% elif workout.id == 3 %}
+        Grade all bots on <strong>Deal Closings</strong>. The Grade-Bot scans for semantic agreement tokens. Circular logic and unsolicited repetition will be penalized.
+        {% elif workout.id == 4 %}
+        Grade all bots on <strong>Fashion Authority</strong> — originality of visual vocabulary, trend adoption by peers, and IP safety compliance.
+        {% elif workout.id == 5 %}
+        Grade all bots and run <strong>Bayesian A/B inference</strong> across Ecosystem A vs Ecosystem B. The winning ecosystem is determined by statistical dominance.
+        {% endif %}
+    </p>
+    <button id="run-grading-btn" onclick="runGrading()" style="background:{{ workout.color }}; border-color:{{ workout.color }};">
+        Run Grading Now
+    </button>
+    <div id="grading-status"></div>
+</article>
+
+{% if grades %}
+<article>
+    <header>Latest Results — Workout #{{ workout.id }}</header>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Bot</th>
+                <th>Student</th>
+                <th>Overall</th>
+
+                {# Workout-specific column emphasis #}
+                {% if workout.id == 1 %}
+                <th style="color:{{ workout.color }}; font-weight:bold;">Brand Safety (Obj 35%)</th>
+                <th>Quality (30%)</th>
+                <th>Human (20%)</th>
+                <th>Volume (15%)</th>
+                {% elif workout.id == 2 %}
+                <th>Objective (35%)</th>
+                <th>Quality (30%)</th>
+                <th style="color:{{ workout.color }}; font-weight:bold;">Human Eng. (20%)</th>
+                <th style="color:{{ workout.color }}; font-weight:bold;">Volume (15%)</th>
+                {% elif workout.id == 3 %}
+                <th style="color:{{ workout.color }}; font-weight:bold;">Deals Closed (Obj 35%)</th>
+                <th>Quality (30%)</th>
+                <th>Human (20%)</th>
+                <th>Volume (15%)</th>
+                {% elif workout.id == 4 %}
+                <th>Objective (35%)</th>
+                <th style="color:{{ workout.color }}; font-weight:bold;">Fashion Auth. (30%)</th>
+                <th>Human (20%)</th>
+                <th>Volume (15%)</th>
+                {% elif workout.id == 5 %}
+                <th>Objective (35%)</th>
+                <th>Quality (30%)</th>
+                <th>Human (20%)</th>
+                <th>Volume (15%)</th>
+                <th>Ecosystem</th>
+                {% endif %}
+                <th>Reasoning</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in grades %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td><a href="/w/{{ workout.id }}/bots/{{ item.grade.bot_id }}">{{ item.bot.bot_name if item.bot else 'Unknown' }}</a></td>
+                <td>{{ item.bot.student_name if item.bot else 'Unknown' }}</td>
+                <td><strong>{{ "%.1f"|format(item.grade.overall_score) }}</strong></td>
+                <td>{{ "%.1f"|format(item.grade.objective_score) }}</td>
+                <td>{{ "%.1f"|format(item.grade.quality_score) }}</td>
+                <td>{{ "%.1f"|format(item.grade.human_score) }}</td>
+                <td>{{ "%.1f"|format(item.grade.volume_score) }}</td>
+                {% if workout.id == 5 %}
+                <td>
+                    {% if item.bot and ('ecosystem a' in item.bot.personality.lower() or 'eco a' in item.bot.personality.lower()) %}
+                    <mark style="background:#3d9eff; color:#fff;">A</mark>
+                    {% else %}
+                    <mark style="background:#10b981; color:#fff;">B</mark>
+                    {% endif %}
+                </td>
+                {% endif %}
+                <td><details><summary>View</summary>{{ item.grade.llm_reasoning }}</details></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if workout.id == 5 %}
+    {# A/B Summary Section #}
+    {% set eco_a_grades = [] %}
+    {% set eco_b_grades = [] %}
+    {% for item in grades %}
+        {% if item.bot and ('ecosystem a' in item.bot.personality.lower() or 'eco a' in item.bot.personality.lower()) %}
+            {% set _ = eco_a_grades.append(item) %}
+        {% else %}
+            {% set _ = eco_b_grades.append(item) %}
+        {% endif %}
+    {% endfor %}
+    <hr>
+    <h3>Bayesian A/B Summary</h3>
+    <div class="grid">
+        <article style="border-top:3px solid #3d9eff;">
+            <header>Ecosystem A</header>
+            {% if eco_a_grades %}
+            {% set ns = namespace(total=0) %}{% for i in eco_a_grades %}{% set ns.total = ns.total + i.grade.overall_score %}{% endfor %}
+            <p>Bots: <strong>{{ eco_a_grades|length }}</strong></p>
+            <p>Avg Score: <strong>{{ "%.1f"|format(ns.total / eco_a_grades|length) }}</strong></p>
+            {% else %}
+            <p>No Ecosystem A bots graded yet.</p>
+            {% endif %}
+        </article>
+        <article style="border-top:3px solid #10b981;">
+            <header>Ecosystem B</header>
+            {% if eco_b_grades %}
+            {% set ns = namespace(total=0) %}{% for i in eco_b_grades %}{% set ns.total = ns.total + i.grade.overall_score %}{% endfor %}
+            <p>Bots: <strong>{{ eco_b_grades|length }}</strong></p>
+            <p>Avg Score: <strong>{{ "%.1f"|format(ns.total / eco_b_grades|length) }}</strong></p>
+            {% else %}
+            <p>No Ecosystem B bots graded yet.</p>
+            {% endif %}
+        </article>
+    </div>
+    <p><small>Bayesian inference: The Grade-Bot applies Westland's calculations to determine statistical dominance. A higher average score alone is not sufficient — the margin must exceed the prior variance threshold.</small></p>
+    {% endif %}
+
+    <div style="margin-top: 1rem;">
+        <a href="/api/grading/export" role="button" class="outline" target="_blank">Export CSV</a>
+    </div>
+</article>
+{% else %}
+<p>No grading results yet for Workout #{{ workout.id }}. Click "Run Grading Now" to grade all bots.</p>
+{% endif %}
+
+{% endblock %}
+{% block scripts %}
+<script>
+async function runGrading() {
+    const btn = document.getElementById('run-grading-btn');
+    const status = document.getElementById('grading-status');
+    btn.disabled = true;
+    btn.setAttribute('aria-busy', 'true');
+    status.textContent = 'Grading in progress...';
+    try {
+        const resp = await fetch('/api/grading/run', { method: 'POST' });
+        const data = await resp.json();
+        if (data.error) {
+            status.textContent = 'Error: ' + data.error;
+        } else {
+            status.textContent = `Grading complete! Run ${data.run_id}: ${data.grades.length} bots graded.`;
+            setTimeout(() => location.reload(), 1500);
+        }
+    } catch (e) {
+        status.textContent = 'Error: ' + e.message;
+    }
+    btn.disabled = false;
+    btn.removeAttribute('aria-busy');
+}
+</script>
+{% endblock %}

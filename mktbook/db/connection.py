@@ -19,6 +19,12 @@ async def get_db() -> aiosqlite.Connection:
         await _db.execute("PRAGMA foreign_keys=ON")
         await _db.executescript(_SCHEMA)
         await _db.commit()
+        # Migrate existing databases: add workout_id column if missing
+        try:
+            await _db.execute("ALTER TABLE bots ADD COLUMN workout_id INTEGER NOT NULL DEFAULT 1")
+            await _db.commit()
+        except Exception:
+            pass  # Column already exists
     return _db
 
 

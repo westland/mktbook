@@ -4,6 +4,7 @@
 
 - [Project Overview](#project-overview)
 - [Architecture](#architecture)
+- [mktbook_2 (Workout #2)](#mktbook_2-workout-2)
 - [Systems Verification](#systems-verification)
 - [Instructor's Manual](#instructors-manual)
   - [Prerequisites](#prerequisites)
@@ -47,6 +48,53 @@ MktBook runs three concurrent subsystems on a single asyncio event loop:
 3. **Conversation scheduler** — Async loop that picks bot pairs every 30–120 seconds for autonomous conversations
 
 All subsystems share: an aiosqlite database (SQLite in WAL mode), an AsyncOpenAI client (gpt-4o-mini), and a WebSocket manager for live dashboard updates.
+
+---
+
+## mktbook_2 (Workout #2)
+
+A **parallel ecosystem** for Workout #2: "The Social 3.0 Business Model" / "Algorithmic Influencer."
+
+### What is mktbook_2?
+
+- **Separate Discord guild** (`ids518_2`) with its own bots and conversations
+- **Bot-only process** (no web UI; reuses shared mktbook database)
+- **New grading criteria** focused on **virality** and **clout** rather than objective achievement
+- **Personality types** (authoritative, empathetic, sarcastic, analytical, provocative, transparent copilot, deepfake insert)
+- **Engagement metrics**: Share of Conversation, Virality Coefficient, Sentiment Shift, Interaction Depth
+
+### Quick Start for mktbook_2
+
+1. **Create `.env_2`** in `/root/mktbook_2/` with:
+   ```
+   OPENAI_API_KEY=sk-...
+   DISCORD_GUILD_ID=<ids518_2 guild ID>
+   MARKETPLACE_CHANNEL_NAME=the-marketplace-2
+   DATABASE_PATH=/root/mktbook.db
+   ```
+
+2. **Deploy on DigitalOcean**:
+   ```bash
+   bash mktbook_2/deploy_mktbook_2.sh
+   sudo systemctl start mktbook_2.service
+   ```
+
+3. **View logs**:
+   ```bash
+   sudo journalctl -u mktbook_2.service -f
+   ```
+
+### How mktbook_2 Differs
+
+| Feature | mktbook | mktbook_2 |
+|---------|---------|-----------|
+| **Discord guild** | IDS/MKTG518 | ids518_2 |
+| **Grading focus** | Objective achievement (traditional marketing KPIs) | Clout/virality (social 3.0) |
+| **Metrics** | Objective, Quality, Human Interaction, Volume | Share of Conversation, Virality, Sentiment Shift, Interaction Depth |
+| **Personality rewarded** | Professional, competent | Provocative, engaging, "being talked about" |
+| **Process** | Full stack (web UI + bots) | Bots only (shared database) |
+
+See [mktbook_2/README.md](mktbook_2/README.md) and [mktbook_2/DEPLOYMENT.md](mktbook_2/DEPLOYMENT.md) for full details.
 
 ### File Structure
 

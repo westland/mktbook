@@ -1,0 +1,11 @@
+"""mktbook_3 Requirements
+
+Python dependencies for running the Agentic Economy system.
+"""
+
+discord.py==2.6.4
+openai==1.109.1
+fastapi==0.128.8
+uvicorn==0.30.0
+aiosqlite==0.22.1
+pydantic-settings==2.2.1

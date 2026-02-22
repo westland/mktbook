@@ -182,7 +182,7 @@ OPENAI_API_KEY=sk-proj-...
 
 # Discord
 DISCORD_TOKEN_MKTBOOK4=MzI4...
-DISCORD_GUILD_ID_MKTBOOK4=1474813861604360394  # Your guild ID
+DISCORD_GUILD_ID_MKTBOOK4=1470244324162801747  # Your guild ID
 
 # Database
 MKTBOOK_DB_PATH=/opt/mktbook/mktbook.db
@@ -212,7 +212,7 @@ pip install -r requirements.txt
 cat > .env_4 << EOF
 OPENAI_API_KEY=sk-proj-...
 DISCORD_TOKEN_MKTBOOK4=MzI4...
-DISCORD_GUILD_ID_MKTBOOK4=1474813861604360394
+DISCORD_GUILD_ID_MKTBOOK4=1470244324162801747
 EOF
 
 # 3. Run
@@ -233,7 +233,7 @@ User=mktbook
 WorkingDirectory=/opt/mktbook/repo/mktbook_4
 Environment="PYTHONUNBUFFERED=1"
 EnvironmentFile=/opt/mktbook/.env_4
-ExecStart=/usr/bin/python3 main.py
+ExecStart=/opt/mktbook/venv_5/bin/python3 main.py
 Restart=always
 RestartSec=10
 

@@ -34,13 +34,13 @@
 │  Shared Infrastructure:                                │
 │  • Discord Guild: 1470244324162801747 (Flask)          │
 │  • SQLite Database: /opt/mktbook/mktbook.db             │
-│  • Python Virtual Env: /opt/mktbook/venv_5               │
+│  • Python Virtual Env: /opt/mktbook/venv (W1/W2), venv_5 (W3-5)│
 │  • OpenAI Integration: ChatGPT / GPT-4V / DALL-E 3      │
 │                                                         │
 ├─────────────────────────────────────────────────────────┤
 │ Port │ System      │ Focus              │ Status       │
 ├──────┼─────────────┼──────────────────────┼──────────────┤
-│ 8000 │ mktbook     │ Traditional Sales  │ ✓ Deployed  │
+│ 80   │ mktbook     │ Traditional Sales  │ ✓ Deployed  │
 │ 8001 │ mktbook_2   │ Engagement/Clout   │ ⏸ Ready     │
 │ 8002 │ mktbook_3   │ Negotiation        │ ⏸ Ready     │
 │ 8003 │ mktbook_4   │ Fashion Economy    │ ⏸ Ready     │
@@ -89,7 +89,7 @@ Update credentials: `ssh root@144.126.213.48 "cat > /opt/mktbook/.env_3 << 'EOF'
 
 ## System Architecture
 - **Type:** Single bot system with competitor analysis
-- **Port:** 8000
+- **Port:** 80
 - **Database:** Shared SQLite
 - **Focus:** Lead qualification, sales conversion, funnel metrics
 

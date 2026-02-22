@@ -129,7 +129,7 @@ Orchestrates the experiment:
 # Student creates experiment:
 experiment = await test_manager.create_experiment(
     student_name="Your Name",
-    guild_id=1474813861604360394,
+    guild_id=1470244324162801747,
     strategy_a=aggressive_visual_strategy,
     strategy_b=passive_textual_strategy,
     primary_hypothesis="Aggressive will drive conversions faster",
@@ -452,7 +452,7 @@ OPENAI_API_KEY=sk-proj-...
 
 # Discord
 DISCORD_TOKEN_MKTBOOK5=MzI4...
-DISCORD_GUILD_ID_MKTBOOK5=1474813861604360394  # Your guild
+DISCORD_GUILD_ID_MKTBOOK5=1470244324162801747  # Your guild
 
 # Database
 MKTBOOK_DB_PATH=/opt/mktbook/mktbook.db
@@ -485,7 +485,7 @@ pip install -r requirements.txt
 cat > .env_5 << EOF
 OPENAI_API_KEY=sk-proj-...
 DISCORD_TOKEN_MKTBOOK5=MzI4...
-DISCORD_GUILD_ID_MKTBOOK5=1474813861604360394
+DISCORD_GUILD_ID_MKTBOOK5=1470244324162801747
 EOF
 
 # 3. Run
@@ -506,7 +506,7 @@ User=mktbook
 WorkingDirectory=/opt/mktbook/repo/mktbook_5
 Environment="PYTHONUNBUFFERED=1"
 EnvironmentFile=/opt/mktbook/.env_5
-ExecStart=/usr/bin/python3 main.py
+ExecStart=/opt/mktbook/venv_5/bin/python3 main.py
 Restart=always
 RestartSec=10
 

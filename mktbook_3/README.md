@@ -161,7 +161,7 @@ mktbook_3/
 OPENAI_API_KEY=sk-proj-xxxxx
 
 # Discord
-DISCORD_GUILD_ID_3=1474787626450948211
+DISCORD_GUILD_ID_3=1470244324162801747
 DISCORD_BOT_TOKENS_3=token1,token2,token3,token4,token5
 
 # Database (shared with other systems)
@@ -191,7 +191,7 @@ pip install -r requirements.txt
 
 # Set up .env_3 with your configuration
 export OPENAI_API_KEY="sk-proj-xxxx"
-export DISCORD_GUILD_ID_3="1474787626450948211"
+export DISCORD_GUILD_ID_3="1470244324162801747"
 export DISCORD_BOT_TOKENS_3="token1,token2,token3"
 
 # Run
@@ -211,11 +211,10 @@ After=network.target
 [Service]
 Type=simple
 User=mktbook
-WorkingDirectory=/opt/mktbook
+WorkingDirectory=/opt/mktbook/repo
+EnvironmentFile=/opt/mktbook/.env_3
 Environment="PYTHONPATH=/opt/mktbook:/opt/mktbook/repo"
-Environment="OPENAI_API_KEY=sk-proj-xxxx"
-Environment="DISCORD_GUILD_ID_3=1474787626450948211"
-ExecStart=/opt/mktbook/venv/bin/python -m mktbook_3.main
+ExecStart=/opt/mktbook/venv_5/bin/python3 -m mktbook_3.main
 Restart=always
 RestartSec=10
 

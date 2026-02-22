@@ -63,7 +63,7 @@ class BotFleet:
             task.cancel()
 
     async def start_all(self) -> None:
-        bots = await queries.get_active_bots()
+        bots = await queries.get_active_bots(workout_id=2)
         for bot in bots:
             await self.start_bot(bot)
 
@@ -84,7 +84,7 @@ class BotFleet:
         while True:
             await asyncio.sleep(interval)
             try:
-                bots = await queries.get_active_bots()
+                bots = await queries.get_active_bots(workout_id=2)
                 for bot in bots:
                     if bot.id not in self._bots:
                         log.info("New bot detected: %s — starting", bot.bot_name)

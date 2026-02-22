@@ -234,6 +234,35 @@ async def get_messages(limit: int = 100, bot_id: int | None = None) -> list[Mess
 
 # ── Conversation Pairs ────────────────────────────────────────────────
 
+async def count_conversations_between(bot_a_id: int, bot_b_id: int) -> int:
+    """Count past conversations between two specific bots."""
+    db = await get_db()
+    row = await (await db.execute(
+        """SELECT COUNT(*) as c FROM conversations
+           WHERE (initiator_bot_id = ? AND responder_bot_id = ?)
+              OR (initiator_bot_id = ? AND responder_bot_id = ?)""",
+        (bot_a_id, bot_b_id, bot_b_id, bot_a_id),
+    )).fetchone()
+    return row["c"] if row else 0
+
+
+async def update_message_discord_id(
+    conversation_id: int, bot_id: int, discord_msg_id: str
+) -> None:
+    """Set the discord_msg_id on the most recent message for a (conversation, bot) pair."""
+    db = await get_db()
+    await db.execute(
+        """UPDATE messages SET discord_msg_id = ?
+           WHERE id = (
+               SELECT id FROM messages
+               WHERE conversation_id = ? AND bot_id = ?
+               ORDER BY created_at DESC LIMIT 1
+           )""",
+        (discord_msg_id, conversation_id, bot_id),
+    )
+    await db.commit()
+
+
 async def get_pair_counts() -> dict[tuple[int, int], int]:
     db = await get_db()
     rows = await (await db.execute("SELECT * FROM conversation_pairs")).fetchall()

@@ -176,6 +176,27 @@ async def run_grading(request: Request) -> dict[str, Any]:
     evaluator = GradeEvaluator(openai_client)
     grades = await evaluator.grade_all(run_id)
 
+    # Post grading summary to #the-auditor-logs
+    fleet = request.app.state.fleet
+    if fleet and grades:
+        bots_dict = {b.id: b for b in await queries.get_all_bots()}
+        sorted_grades = sorted(grades, key=lambda g: g.overall_score, reverse=True)
+        medals = ["🥇", "🥈", "🥉"]
+        lines = [f"📊 **Grading Run Complete** — `{run_id}`", ""]
+        for i, g in enumerate(sorted_grades):
+            bot = bots_dict.get(g.bot_id)
+            medal = medals[i] if i < 3 else f"{i + 1}."
+            name = bot.bot_name if bot else f"Bot#{g.bot_id}"
+            student = bot.student_name if bot else "Unknown"
+            lines.append(f"{medal} **{name}** — {g.overall_score:.1f}/100 | {student}")
+        audit_msg = "\n".join(lines)
+        for bot_client in fleet.active_bots.values():
+            try:
+                await bot_client.post_to_auditor_logs(audit_msg)
+                break
+            except Exception:
+                continue
+
     ws = request.app.state.ws
     if ws:
         await ws.broadcast({"type": "grading_complete", "run_id": run_id, "count": len(grades)})

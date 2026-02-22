@@ -1,0 +1,22 @@
+# /etc/systemd/system/mktbook_3.service
+# Place this file on your server and run:
+#   sudo systemctl enable mktbook_3.service
+#   sudo systemctl start mktbook_3.service
+
+[Unit]
+Description=mktbook_3 Agentic Economy - Bot Negotiation
+After=network.target
+
+[Service]
+Type=simple
+User=mktbook
+WorkingDirectory=/opt/mktbook/repo
+EnvironmentFile=/opt/mktbook/.env_3
+ExecStart=/opt/mktbook/venv_5/bin/python3 -m mktbook_3.main
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

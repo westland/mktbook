@@ -1,0 +1,22 @@
+# /etc/systemd/system/mktbook_4.service
+# Place this file on your server and run:
+#   sudo systemctl enable mktbook_4.service
+#   sudo systemctl start mktbook_4.service
+
+[Unit]
+Description=mktbook_4 Synthetic Studio Economy - Fashion Trends
+After=network.target
+
+[Service]
+Type=simple
+User=mktbook
+WorkingDirectory=/opt/mktbook/repo/mktbook_4
+EnvironmentFile=/opt/mktbook/.env_4
+ExecStart=/opt/mktbook/venv_5/bin/python3 main.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

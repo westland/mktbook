@@ -1,7 +1,6 @@
-"""mktbook_3: The Agentic Economy - Bot-to-Bot Hard Selling"""
+"""mktbook_3: The Agentic Economy — per-student DB-driven negotiation bots."""
 
-__version__ = "0.1.0"
-__author__ = "CLAUDE"
+__version__ = "0.96.0"
 
 from .models import (
     NegotiationPersona,
@@ -11,7 +10,8 @@ from .models import (
     GradeMetrics,
 )
 from .bots.fleet import BotFleet
-from .scheduler.loop import ConversationScheduler
+from .bots.bot_client import SingleBot
+from .scheduler.loop import NegotiationScheduler
 from .grading.evaluator import DealEvaluator
 
 __all__ = [
@@ -21,6 +21,7 @@ __all__ = [
     "BotProfile",
     "GradeMetrics",
     "BotFleet",
-    "ConversationScheduler",
+    "SingleBot",
+    "NegotiationScheduler",
     "DealEvaluator",
 ]

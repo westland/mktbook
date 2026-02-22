@@ -85,11 +85,15 @@ async def main() -> None:
         await asyncio.sleep(5)
         await scheduler.run()
 
+    async def run_poller() -> None:
+        await fleet.poll_new_bots(interval=30)
+
     try:
         await asyncio.gather(
             run_server(),
             run_fleet(),
             run_scheduler(),
+            run_poller(),
         )
     except asyncio.CancelledError:
         pass

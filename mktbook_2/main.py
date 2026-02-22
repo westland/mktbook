@@ -66,10 +66,14 @@ async def main() -> None:
         await scheduler.stop()
         log.info("mktbook_2 Scheduler stopped")
 
+    async def run_poller() -> None:
+        await fleet.poll_new_bots(interval=30)
+
     try:
         await asyncio.gather(
             run_fleet(),
             run_scheduler(),
+            run_poller(),
         )
     except asyncio.CancelledError:
         pass

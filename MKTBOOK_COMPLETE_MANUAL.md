@@ -74,11 +74,44 @@ All services read from environment files in `/opt/mktbook/`:
 
 | Service | Config File | Settings |
 |---------|------------|----------|
-| mktbook_3 | `.env_3` | Discord token, OpenAI key, negotiation thresholds |
-| mktbook_4 | `.env_4` | Discord token, OpenAI key, DALL-E settings |
-| mktbook_5 | `.env_5` | Discord token, OpenAI key, guild ID |
+| mktbook   | `.env`   | OpenAI key, guild ID, DB path |
+| mktbook_2 | `.env_2` | OpenAI key, guild ID, DB path |
+| mktbook_3 | `.env_3` | OpenAI key, guild ID, DB path, negotiation thresholds |
+| mktbook_4 | `.env_4` | OpenAI key, guild ID, DB path, DALL-E settings |
+| mktbook_5 | `.env_5` | OpenAI key, guild ID, DB path, A/B settings |
 
-Update credentials: `ssh root@144.126.213.48 "cat > /opt/mktbook/.env_3 << 'EOF'..."`
+> **v0.96 Architecture Change:** All workouts (W1–W5) now use the **same per-student, DB-driven pattern**.
+> Students register bots via the web dashboard with their own Discord bot token. Each workout service
+> polls `mktbook.db` for bots with its `workout_id` and starts them automatically — no service restarts
+> needed when a new student bot is registered.
+
+**W3 env example (`/root/mktbook_3/.env_3`):**
+```
+OPENAI_API_KEY=sk-...
+DISCORD_GUILD_ID=YOUR_GUILD_ID
+DATABASE_PATH=/root/mktbook.db
+NEGOTIATION_COOLDOWN=30
+MAX_NEGOTIATION_TURNS=15
+```
+
+**W4 env example (`/root/mktbook_4/.env_4`):**
+```
+OPENAI_API_KEY=sk-...
+DISCORD_GUILD_ID=YOUR_GUILD_ID
+DATABASE_PATH=/root/mktbook.db
+TREND_CYCLE_INTERVAL=300
+IMAGE_STORAGE_PATH=/opt/mktbook/generated_images
+```
+
+**W5 env example (`/root/mktbook_5/.env_5`):**
+```
+OPENAI_API_KEY=sk-...
+DISCORD_GUILD_ID=YOUR_GUILD_ID
+DATABASE_PATH=/root/mktbook.db
+PITCH_INTERVAL=45
+```
+
+Update credentials: `ssh root@144.126.213.48 "nano /root/mktbook_3/.env_3"`
 
 ---
 

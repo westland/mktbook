@@ -78,3 +78,16 @@ class BotFleet:
         bot_row = await queries.get_bot(bot_id)
         if bot_row and bot_row.is_active:
             await self.start_bot(bot_row)
+
+    async def poll_new_bots(self, interval: int = 30) -> None:
+        """Periodically check the DB for newly registered bots and start them."""
+        while True:
+            await asyncio.sleep(interval)
+            try:
+                bots = await queries.get_active_bots()
+                for bot in bots:
+                    if bot.id not in self._bots:
+                        log.info("New bot detected: %s — starting", bot.bot_name)
+                        await self.start_bot(bot)
+            except Exception:
+                log.exception("Error polling for new bots")

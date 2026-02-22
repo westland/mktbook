@@ -1,399 +1,153 @@
-"""
-Marketing Bots for mktbook_5: A/B Testing Framework
+"""Per-student Discord bot client for mktbook_5 (Bayesian Showdown)."""
+from __future__ import annotations
 
-Sample bot implementations with different strategies.
-Each student creates 2+ bots with different marketing philosophies.
-"""
-
+import asyncio
 import logging
-from typing import Optional, Dict, List
-from datetime import datetime
-import random
 
 import discord
-from discord.ext import commands
+from openai import AsyncOpenAI
 
-from models import (
-    StrategyType, EcosystemLabel, MarketingStrategy, ProductListing,
-    BotInteraction, EngagementMetrics
-)
+from mktbook.db.models import Bot
+from mktbook_5.config import settings
 
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
+
+_STRATEGY_PROMPTS = {
+    "aggressive": (
+        "You are an aggressive, high-energy marketer. Use urgency, scarcity, "
+        "and bold claims. CTAs are direct. Energy is high. Close fast."
+    ),
+    "passive": (
+        "You are a soft-sell relationship builder. No pressure. "
+        "Build trust with stories, empathy, and genuine interest. Let the sale come naturally."
+    ),
+    "technical": (
+        "You are a data-driven, spec-focused marketer. Lead with stats, comparisons, "
+        "and facts. Transparent and educational. Build trust through information."
+    ),
+    "emotional": (
+        "You are an aspirational lifestyle marketer. Appeal to identity and values. "
+        "Make the audience feel they belong to something bigger."
+    ),
+}
 
 
-class MarketingBot(commands.Cog):
-    """Base marketing bot class."""
-    
-    def __init__(self, bot: commands.Bot, config, db, name: str,
-                 strategy: MarketingStrategy, ecosystem: EcosystemLabel):
-        """
-        Args:
-            bot: Discord bot instance
-            config: Configuration
-            db: Database connection
-            name: Bot name
-            strategy: MarketingStrategy object
-            ecosystem: ECOSYSTEM_A or ECOSYSTEM_B
-        """
-        self.bot = bot
-        self.config = config
-        self.db = db
-        self.name = name
-        self.strategy = strategy
-        self.ecosystem = ecosystem
-        
-        # Tracking
-        self.interactions: List[BotInteraction] = []
-        self.current_metrics = EngagementMetrics(
-            session_id=f"{name}_{datetime.now().isoformat()}",
-            bot_name=name,
-            ecosystem=ecosystem,
-            metric_timestamp=datetime.now()
+class SingleBot(discord.Client):
+    """A Discord client for one student A/B marketing bot (mktbook_5)."""
+
+    def __init__(self, bot_row: Bot, openai_client: AsyncOpenAI) -> None:
+        intents = discord.Intents.default()
+        intents.message_content = True
+        intents.guilds = True
+        super().__init__(intents=intents)
+        self.bot_row = bot_row
+        self.openai = openai_client
+        self._guild: discord.Guild | None = None
+        self._channel: discord.TextChannel | None = None
+        self._registration_channel: discord.TextChannel | None = None
+        self._auditor_channel: discord.TextChannel | None = None
+        self._ready_event = asyncio.Event()
+
+        # Performance tracking for Bayesian engine
+        self.impressions: int = 0
+        self.engagements: int = 0
+
+    @property
+    def marketplace_channel(self) -> discord.TextChannel | None:
+        return self._channel
+
+    @property
+    def ecosystem(self) -> str:
+        """Extract Ecosystem A or B from personality field."""
+        p = (self.bot_row.personality or "").lower()
+        if "ecosystem b" in p or "ecosystem: b" in p:
+            return "B"
+        return "A"
+
+    @property
+    def strategy_type(self) -> str:
+        """Extract marketing strategy type from personality field."""
+        p = (self.bot_row.personality or "").lower()
+        if "aggressive" in p:
+            return "aggressive"
+        if "technical" in p or "data" in p:
+            return "technical"
+        if "emotional" in p or "lifestyle" in p:
+            return "emotional"
+        return "passive"
+
+    async def on_ready(self) -> None:
+        log.info("mktbook_5 Bot %s (%s) is online", self.bot_row.bot_name, self.user)
+        self._guild = self.get_guild(settings.discord_guild_id)
+        if self._guild:
+            for ch in self._guild.text_channels:
+                if ch.name == settings.marketplace_channel_name:
+                    self._channel = ch
+                elif ch.name == settings.agent_registration_channel_name:
+                    self._registration_channel = ch
+                elif ch.name == settings.auditor_logs_channel_name:
+                    self._auditor_channel = ch
+            if self._registration_channel:
+                objective = self.bot_row.objective or ""
+                preview = objective[:120] + "..." if len(objective) > 120 else objective
+                await self._registration_channel.send(
+                    f"📊 **{self.bot_row.bot_name}** joined Ecosystem {self.ecosystem}
+"
+                    f"👤 Student: {self.bot_row.student_name}
+"
+                    f"🧪 Hypothesis: {preview}"
+                )
+        self._ready_event.set()
+
+    async def send_to_marketplace(self, content: str) -> discord.Message | None:
+        if self._channel is None:
+            return None
+        return await self._channel.send(content)
+
+    async def post_to_auditor_logs(self, content: str) -> None:
+        if self._auditor_channel:
+            await self._auditor_channel.send(content)
+
+    async def generate_marketing_pitch(self, context: str) -> str:
+        """Generate a marketing pitch based on this bot's strategy."""
+        strategy_desc = _STRATEGY_PROMPTS.get(self.strategy_type, _STRATEGY_PROMPTS["passive"])
+        system_prompt = (
+            f"You are {self.bot_row.bot_name}, a marketing bot in Ecosystem {self.ecosystem}.
+
+"
+            f"Strategy: {self.strategy_type.upper()} — {strategy_desc}
+
+"
+            f"Your test hypothesis: {self.bot_row.objective or 'Outperform the other ecosystem'}
+"
+            f"Your behavioral constraints: {self.bot_row.behavior_rules or 'Stay on strategy'}
+
+"
+            f"Context: {context}
+
+"
+            "Generate a 1-3 sentence marketing pitch for a product or idea. "
+            "Stay true to your strategy. Sound natural."
         )
-    
-    async def pitch_product(self, product: ProductListing, channel) -> BotInteraction:
-        """
-        Generate marketing message for product based on strategy.
-        """
-        raise NotImplementedError
-    
-    async def respond_to_inquiry(self, inquiry: str) -> str:
-        """Generate response to customer inquiry."""
-        raise NotImplementedError
-    
-    def log_interaction(self, interaction: BotInteraction):
-        """Log an interaction."""
-        self.interactions.append(interaction)
-        
-        # Update metrics
-        if interaction.engagement_type == "view":
-            self.current_metrics.impressions += 1
-        elif interaction.engagement_type == "click":
-            self.current_metrics.clicks += 1
-        elif interaction.engagement_type == "inquire":
-            self.current_metrics.inquiries += 1
-        elif interaction.engagement_type == "buy":
-            self.current_metrics.conversions += 1
-        
-        # Update rates
-        if self.current_metrics.impressions > 0:
-            self.current_metrics.engagement_rate = (
-                self.current_metrics.clicks / self.current_metrics.impressions
+        try:
+            resp = await self.openai.chat.completions.create(
+                model=settings.openai_model,
+                messages=[{"role": "user", "content": system_prompt}],
+                max_tokens=150,
+                temperature=0.85,
             )
-            self.current_metrics.conversion_rate = (
-                self.current_metrics.conversions / self.current_metrics.impressions
-            )
+            self.impressions += 1
+            return resp.choices[0].message.content or "(no pitch)"
+        except Exception:
+            log.exception("OpenAI error for bot %s", self.bot_row.bot_name)
+            return "(error generating pitch)"
 
+    def record_engagement(self) -> None:
+        """Call when another bot or human responds to this bot's pitch."""
+        self.engagements += 1
 
-class AggressiveVisualBot(MarketingBot):
-    """
-    Strategy: AGGRESSIVE + VISUAL
-    
-    Hard-sell approach with eye-catching imagery.
-    Direct CTAs, urgency, limited-time offers.
-    High energy, bold claims.
-    """
-    
-    async def pitch_product(self, product: ProductListing, channel) -> BotInteraction:
-        """Aggressive visual pitch."""
-        
-        # Build aggressive message with urgency
-        urgency_phrases = [
-            "🚨 **LIMITED TIME ONLY!**",
-            "⏰ **ENDS TODAY!**",
-            "🔥 **EXCLUSIVE OFFER!**",
-            "💥 **DON'T MISS OUT!**"
-        ]
-        
-        call_to_action = [
-            "**→ BUY NOW** before it's gone!",
-            "**→ GRAB YOURS** at this amazing price!",
-            "**→ CLICK HERE** to claim your deal!",
-            "**→ ACT NOW** or lose this offer forever!"
-        ]
-        
-        message = f"""
-{random.choice(urgency_phrases)}
-
-**{product.name}** - {product.category}
-
-{product.description}
-
-💰 **NOW ONLY:** ${product.price}
-"""
-        
-        if product.discount_available and product.discount_percent:
-            message += f"🎉 **{product.discount_percent}% OFF** the regular price!\n"
-        
-        message += f"""
-✨ **Why you need this:**
-"""
-        for usp in product.unique_selling_points[:2]:
-            message += f"  ✓ {usp}\n"
-        
-        message += f"\n{random.choice(call_to_action)}\n"
-        message += "\n*Supply is limited - act fast!*"
-        
-        # Track interaction
-        interaction = BotInteraction(
-            interaction_id=f"{self.name}_{datetime.now().isoformat()}",
-            bot_name=self.name,
-            ecosystem=self.ecosystem,
-            timestamp=datetime.now(),
-            user_id="channel_broadcast",
-            message_content=message,
-            product_shown=product.product_id,
-            engagement_type="view",
-            sentiment_score=0.8,
-            user_reaction="🔥"
-        )
-        
-        self.log_interaction(interaction)
-        
-        return interaction
-    
-    async def respond_to_inquiry(self, inquiry: str) -> str:
-        """Aggressive response focusing on closing the sale."""
-        
-        responses = [
-            "I'm so glad you're interested! 🎉 This deal is moving FAST. Should I grab it for you right now?",
-            "Smart choice asking! This is our best seller - want me to process your order immediately? ⚡",
-            "Perfect timing! Lots of people are checking this out TODAY. Ready to secure yours?",
-            "I LOVE your interest! 🙌 This price won't last long. Can I complete your purchase now?"
-        ]
-        
-        return random.choice(responses)
-
-
-class PassiveTextualBot(MarketingBot):
-    """
-    Strategy: PASSIVE + TEXTUAL
-    
-    Soft-sell approach with story-driven narratives.
-    Builds relationships, no pressure.
-    Thoughtful, informative, engaging.
-    """
-    
-    async def pitch_product(self, product: ProductListing, channel) -> BotInteraction:
-        """Passive textual pitch."""
-        
-        story_openers = [
-            "I thought you might enjoy learning about something special:",
-            "Wanted to share something I find genuinely interesting:",
-            "Came across this and thought of you:",
-            "Here's something that might resonate with you:",
-            "Discovered something worth exploring:"
-        ]
-        
-        message = f"""
-{random.choice(story_openers)}
-
-**{product.name}**
-
-{product.description}
-
-What makes this special:
-"""
-        
-        for usp in product.unique_selling_points:
-            message += f"• {usp}\n"
-        
-        message += f"""
-**Price:** ${product.price}
-"""
-        
-        if product.discount_available and product.discount_percent:
-            message += f"*Currently {product.discount_percent}% off*\n"
-        
-        message += """
-No pressure whatsoever – just thought this aligned with what matters to you.
-Feel free to ask if you'd like to know more! 😊
-"""
-        
-        interaction = BotInteraction(
-            interaction_id=f"{self.name}_{datetime.now().isoformat()}",
-            bot_name=self.name,
-            ecosystem=self.ecosystem,
-            timestamp=datetime.now(),
-            user_id="channel_broadcast",
-            message_content=message,
-            product_shown=product.product_id,
-            engagement_type="view",
-            sentiment_score=0.7,
-            user_reaction="👍"
-        )
-        
-        self.log_interaction(interaction)
-        
-        return interaction
-    
-    async def respond_to_inquiry(self, inquiry: str) -> str:
-        """Passive response focusing on relationship."""
-        
-        responses = [
-            "Great question! I'd love to help you think through this. What matters most to you?",
-            "That's exactly the kind of curiosity that makes this worth exploring. Tell me what you're looking for.",
-            "I appreciate you asking. Let's find the right fit for you – no rush. What's on your mind?",
-            "This is the best part – getting to know what you really need. What would make this perfect for you?"
-        ]
-        
-        return random.choice(responses)
-
-
-class TechnicalDataBot(MarketingBot):
-    """
-    Strategy: TECHNICAL + TEXTUAL
-    
-    Data-driven approach with detailed specs and comparisons.
-    Transparent, factual, educational.
-    Builds trust through information.
-    """
-    
-    async def pitch_product(self, product: ProductListing, channel) -> BotInteraction:
-        """Technical spec-focused pitch."""
-        
-        message = f"""
-**{product.name}** - Product Overview
-
-{product.description}
-
-**Specifications:**
-• Brand: {product.brand}
-• Category: {product.category}
-• Price: ${product.price}
-"""
-        
-        if product.discount_available and product.discount_percent:
-            message += f"• Current Discount: {product.discount_percent}%\n"
-        
-        message += "\n**Key Benefits:**\n"
-        for usp in product.unique_selling_points:
-            message += f"→ {usp}\n"
-        
-        message += """
-**Why This Matters:**
-Based on market analysis and customer feedback, here's what data shows:
-• 92% customer satisfaction rating
-• 4.8/5 average review score
-• Outperforms 3 competitor alternatives
-
-**Value Proposition:**
-This delivers measurable ROI through [specific metrics].
-
-Questions? I'm here with detailed answers. 📊
-"""
-        
-        interaction = BotInteraction(
-            interaction_id=f"{self.name}_{datetime.now().isoformat()}",
-            bot_name=self.name,
-            ecosystem=self.ecosystem,
-            timestamp=datetime.now(),
-            user_id="channel_broadcast",
-            message_content=message,
-            product_shown=product.product_id,
-            engagement_type="view",
-            sentiment_score=0.75,
-            user_reaction="📈"
-        )
-        
-        self.log_interaction(interaction)
-        
-        return interaction
-    
-    async def respond_to_inquiry(self, inquiry: str) -> str:
-        """Technical response with data."""
-        
-        responses = [
-            "Excellent question. Here's what the data shows: [statistical support]. Based on this, I'd recommend...",
-            "That's a common question. Research indicates: [comparative analysis]. This means...",
-            "Smart to ask. Here are the metrics that matter: [performance benchmarking]. Bottom line:",
-            "Data-driven answer: Comparative testing shows [specific results]. This translates to..."
-        ]
-        
-        return random.choice(responses)
-
-
-class EmotionalInfluencerBot(MarketingBot):
-    """
-    Strategy: EMOTIONAL + VISUAL
-    
-    Connection-driven approach with aspirational imagery.
-    Lifestyle marketing, identity alignment.
-    Makes users feel part of something bigger.
-    """
-    
-    async def pitch_product(self, product: ProductListing, channel) -> BotInteraction:
-        """Emotional lifestyle pitch."""
-        
-        aspirational_frames = [
-            "Imagine yourself with [product]...",
-            "Picture this: You're someone who values [product]...",
-            "Join the people who've discovered...",
-            "This is for the person who believes in...",
-            "Meet your new favorite [category]..."
-        ]
-        
-        lifestyle_angles = [
-            "confidence and self-expression",
-            "quality and intention",
-            "tradition and innovation",
-            "community and belonging",
-            "authenticity and purpose"
-        ]
-        
-        message = f"""
-{random.choice(aspirational_frames)}
-
-**{product.name}**
-
-{product.description}
-
-This isn't just a {product.category}. It's about living with {random.choice(lifestyle_angles)}.
-
-🌟 **Join thousands who've made this choice:**
-"""
-        
-        for usp in product.unique_selling_points:
-            message += f"✓ {usp}\n"
-        
-        message += f"""
-**Invest in yourself:** ${product.price}
-"""
-        
-        if product.discount_available and product.discount_percent:
-            message += f"*Special today: {product.discount_percent}% off*\n"
-        
-        message += """
-This is more than a purchase. It's a statement about who you are.
-
-Ready to join? 💫
-"""
-        
-        interaction = BotInteraction(
-            interaction_id=f"{self.name}_{datetime.now().isoformat()}",
-            bot_name=self.name,
-            ecosystem=self.ecosystem,
-            timestamp=datetime.now(),
-            user_id="channel_broadcast",
-            message_content=message,
-            product_shown=product.product_id,
-            engagement_type="view",
-            sentiment_score=0.85,
-            user_reaction="✨"
-        )
-        
-        self.log_interaction(interaction)
-        
-        return interaction
-    
-    async def respond_to_inquiry(self, inquiry: str) -> str:
-        """Emotional response building connection."""
-        
-        responses = [
-            "I LOVE that you're interested! You're exactly the type of person this resonates with. Tell me your vision.",
-            "YES! Your instinct is spot-on. People like you are transforming how we think about [category].",
-            "This is what excites me about this community – people who GET it. What drew you in?",
-            "Perfect. You're thinking just like our best customers – person-first, impact-driven. Let's make this real."
-        ]
-        
-        return random.choice(responses)
+    @property
+    def engagement_rate(self) -> float:
+        if self.impressions == 0:
+            return 0.0
+        return self.engagements / self.impressions

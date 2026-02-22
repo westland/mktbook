@@ -1,22 +1,21 @@
 # /etc/systemd/system/mktbook_5.service
-# Place this file on your server and run:
-#   sudo systemctl enable mktbook_5.service
-#   sudo systemctl start mktbook_5.service
-
 [Unit]
-Description=mktbook_5 Bayesian A/B Testing Framework
-After=network.target
+Description=MktBook 5 (Workout #5) Bayesian Showdown Bot Ecosystem
+After=network.target mktbook.service
+Requires=mktbook.service
 
 [Service]
 Type=simple
-User=mktbook
-WorkingDirectory=/opt/mktbook/repo/mktbook_5
-EnvironmentFile=/opt/mktbook/.env_5
-ExecStart=/opt/mktbook/venv_5/bin/python3 main.py
+User=root
+WorkingDirectory=/root
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+EnvironmentFile=/root/mktbook_5/.env_5
+ExecStart=/usr/bin/python3 -m mktbook_5.main
 Restart=always
 RestartSec=10
 StandardOutput=journal
 StandardError=journal
+SyslogIdentifier=mktbook_5
 
 [Install]
 WantedBy=multi-user.target

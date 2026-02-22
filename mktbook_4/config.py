@@ -1,126 +1,44 @@
-"""
-Configuration for mktbook_4: Synthetic Studio Economy
-"""
+"""Configuration for mktbook_4: The Synthetic Studio Economy."""
+from __future__ import annotations
 
-import os
-from pathlib import Path
-from typing import Optional
-import logging
+import pathlib
 
-logger = logging.getLogger(__name__)
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_ENV_FILE = pathlib.Path(__file__).parent / ".env_4"
 
 
-class Config:
-    """Central configuration for mktbook_4."""
-    
-    def __init__(self):
-        """Initialize configuration from environment and defaults."""
-        
-        # API Keys
-        self.openai_api_key = os.getenv("OPENAI_API_KEY", "")
-        
-        # Discord
-        self.discord_token = os.getenv("DISCORD_TOKEN_MKTBOOK4", "")
-        self.discord_guild_id = int(os.getenv("DISCORD_GUILD_ID_MKTBOOK4", "0"))
-        
-        # Database
-        self.db_path = os.getenv(
-            "MKTBOOK_DB_PATH",
-            "/opt/mktbook/mktbook.db"
-        )
-        
-        # Image generation
-        self.image_generation_model = "dall-e-3"
-        self.image_size = "1024x1024"
-        self.image_quality = "hd"
-        
-        # Image storage
-        self.image_storage_path = Path(
-            os.getenv("IMAGE_STORAGE_PATH", "/opt/mktbook/generated_images")
-        )
-        self.image_storage_path.mkdir(exist_ok=True, parents=True)
-        
-        # Bot configuration
-        self.bot_names = [
-            "Arbitrage",     # Trend hunter, seeks novelty
-            "Outreach",      # Community builder, seeks adoption
-            "Intelligence",  # Analyst, seeks pattern
-            "Trendsetter"    # Tastemaker, seeks influence
-        ]
-        
-        self.bot_personalities = {
-            "Arbitrage": "Seeks unique fashion opportunities, value hunter, early adopter",
-            "Outreach": "Community-focused, inclusive, wants fashion for everyone",
-            "Intelligence": "Analytical, data-driven, seeks patterns in trend adoption",
-            "Trendsetter": "Aspirational, luxury-focused, defines high fashion"
-        }
-        
-        # Grading weights
-        self.grading_weights = {
-            "creativity": 0.35,      # Novel imagery generation
-            "influence": 0.35,       # Miranda Priestly index (adoption by peers)
-            "aesthetic_quality": 0.20,  # Technical execution (color, silhouette, etc)
-            "ethics": 0.10           # IP compliance, diversity, sustainability
-        }
-        
-        # Evaluation styles
-        self.evaluation_styles = {
-            "Arbitrage": "critical_expert",
-            "Outreach": "pragmatist",
-            "Intelligence": "trend_evangelist",
-            "Trendsetter": "cultural_analyst"
-        }
-        
-        # Scheduler
-        self.trend_cycle_interval = 300  # Seconds between trend cycles
-        self.max_proposals_per_cycle = 4  # Max proposals from bots per cycle
-        
-        # Ports
-        self.web_port = 8003
-        self.web_host = "0.0.0.0"
-        
-        # Logging
-        self.log_level = os.getenv("LOG_LEVEL", "INFO")
-        
-        self._validate()
-    
-    def _validate(self):
-        """Validate critical configuration."""
-        
-        issues = []
-        
-        if not self.openai_api_key:
-            issues.append("OPENAI_API_KEY not set")
-        
-        if not self.discord_token:
-            issues.append("DISCORD_TOKEN_MKTBOOK4 not set")
-        
-        if self.discord_guild_id == 0:
-            issues.append("DISCORD_GUILD_ID_MKTBOOK4 not set")
-        
-        if issues:
-            logger.warning(f"Configuration issues: {', '.join(issues)}")
-        else:
-            logger.info("Configuration validated successfully")
-    
-    def get_bot_config(self, bot_name: str) -> dict:
-        """Get configuration for specific bot."""
-        
-        return {
-            "name": bot_name,
-            "personality": self.bot_personalities.get(bot_name, ""),
-            "evaluation_style": self.evaluation_styles.get(bot_name, "critical_expert")
-        }
-    
-    def is_production(self) -> bool:
-        """Check if running in production."""
-        return os.getenv("ENVIRONMENT", "development") == "production"
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=str(_ENV_FILE),
+        env_file_encoding="utf-8",
+    )
+
+    openai_api_key: str
+    discord_guild_id: int
+    marketplace_channel_name: str = "the-marketplace"
+    agent_registration_channel_name: str = "agent-registration"
+    auditor_logs_channel_name: str = "the-auditor-logs"
+    database_path: str = "mktbook.db"
+    host: str = "0.0.0.0"
+    port: int = 8003
+
+    # Fashion / image generation
+    image_generation_model: str = "dall-e-3"
+    image_size: str = "1024x1024"
+    image_quality: str = "standard"
+    image_storage_path: str = "/opt/mktbook/generated_images"
+
+    # Cycle timing
+    trend_cycle_interval: int = 300   # seconds between full trend cycles
+
+    openai_model: str = "gpt-4o-mini"
+
+    # Grading weights
+    creativity_weight: float = 0.35
+    influence_weight: float = 0.35
+    aesthetic_weight: float = 0.20
+    ethics_weight: float = 0.10
 
 
-def get_config() -> Config:
-    """Get global config instance."""
-    return _config
-
-
-# Global config instance
-_config = Config()
+settings = Settings()  # type: ignore[call-arg]

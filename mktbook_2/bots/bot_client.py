@@ -36,6 +36,8 @@ class SingleBot(discord.Client):
         self.ws = ws
         self._guild: discord.Guild | None = None
         self._channel: discord.TextChannel | None = None
+        self._registration_channel: discord.TextChannel | None = None
+        self._auditor_channel: discord.TextChannel | None = None
         self._ready_event = asyncio.Event()
 
     @property
@@ -49,7 +51,20 @@ class SingleBot(discord.Client):
             for ch in self._guild.text_channels:
                 if ch.name == settings.marketplace_channel_name:
                     self._channel = ch
-                    break
+                elif ch.name == settings.agent_registration_channel_name:
+                    self._registration_channel = ch
+                elif ch.name == settings.auditor_logs_channel_name:
+                    self._auditor_channel = ch
+
+            if self._registration_channel:
+                objective = self.bot_row.objective or ""
+                preview = objective[:120] + "..." if len(objective) > 120 else objective
+                await self._registration_channel.send(
+                    f"🤖 **{self.bot_row.bot_name}** has entered the marketplace\n"
+                    f"👤 Student: {self.bot_row.student_name}\n"
+                    f"🎯 Objective: {preview}"
+                )
+
         self._ready_event.set()
 
     async def wait_until_marketplace_ready(self) -> None:
@@ -127,6 +142,11 @@ class SingleBot(discord.Client):
         if self._channel is None:
             return None
         return await self._channel.send(content)
+
+    async def post_to_auditor_logs(self, content: str) -> None:
+        """Post a message to the auditor logs channel."""
+        if self._auditor_channel:
+            await self._auditor_channel.send(content)
 
     async def generate_response(self, llm_messages: list[dict[str, str]]) -> str:
         """Generate an LLM response given prebuilt messages."""

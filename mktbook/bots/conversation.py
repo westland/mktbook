@@ -40,6 +40,42 @@ def build_conversation_messages(
     return messages
 
 
+def build_bot_to_bot_messages(
+    current_bot: Bot,
+    other_bot: Bot,
+    recent_messages: list,
+) -> list[dict[str, str]]:
+    """Build messages for a bot-to-bot conversation turn.
+
+    recent_messages may contain Message objects (from DB) or (author_name, content) tuples
+    (appended in-memory during the conversation loop).
+    """
+    messages: list[dict[str, str]] = [{"role": "system", "content": build_system_prompt(current_bot)}]
+    messages.append({
+        "role": "system",
+        "content": (
+            f"You are in a conversation with {other_bot.bot_name}. "
+            "Stay in character and engage with their marketing objective while pursuing your own."
+        ),
+    })
+
+    for item in recent_messages:
+        if isinstance(item, tuple):
+            author_name, content = item
+            if author_name == current_bot.bot_name:
+                messages.append({"role": "assistant", "content": content})
+            else:
+                messages.append({"role": "user", "content": f"{author_name}: {content}"})
+        else:
+            # Message object from DB
+            if item.bot_id == current_bot.id:
+                messages.append({"role": "assistant", "content": item.content})
+            else:
+                messages.append({"role": "user", "content": f"{item.author_name}: {item.content}"})
+
+    return messages
+
+
 def build_reply_messages(bot: Bot, human_name: str, human_message: str, recent_history: list[Message]) -> list[dict[str, str]]:
     """Build messages for replying to a human."""
     messages: list[dict[str, str]] = [{"role": "system", "content": build_system_prompt(bot)}]

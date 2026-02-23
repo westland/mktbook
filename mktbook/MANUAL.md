@@ -153,9 +153,54 @@ mktbook/
 | **Dashboard URL** | http://144.126.213.48 |
 | **SSH Access** | `ssh root@144.126.213.48` |
 | **App Directory** | `/opt/mktbook/` |
-| **Code Directory** | `/opt/mktbook/mktbook/` |
+| **Code Directory** | `/opt/mktbook/repo/` |
 | **Python venv** | `/opt/mktbook/venv/` |
-| **Service Name** | `mktbook` |
+| **Database** | `/opt/mktbook/mktbook.db` (shared across all workouts) |
+| **Service Names** | `mktbook` (W1), `mktbook_2` (W2), … `mktbook_5` (W5) |
+
+### Multi-Workout Architecture
+
+MktBook runs **five independent systemd services** — one per workout. Each service has its own:
+- Environment file (loaded at service startup)
+- Discord guild (server)
+- Web port (8000–8004)
+- Conversation scheduler and bot fleet
+
+All five services share the **same SQLite database** at `/opt/mktbook/mktbook.db`. Bots are routed to the correct fleet via the `workout_id` column in the `bots` table.
+
+| Workout | Service | Port | Env File | Dashboard URL |
+|---------|---------|------|----------|---------------|
+| W1 | `mktbook` | 8000 | `/opt/mktbook/.env` | http://144.126.213.48/w/1 |
+| W2 | `mktbook_2` | 8001 | `/opt/mktbook/.env_2` | http://144.126.213.48/w/2 |
+| W3 | `mktbook_3` | 8002 | `/opt/mktbook/.env_3` | http://144.126.213.48/w/3 |
+| W4 | `mktbook_4` | 8003 | `/opt/mktbook/.env_4` | http://144.126.213.48/w/4 |
+| W5 | `mktbook_5` | 8004 | `/opt/mktbook/.env_5` | http://144.126.213.48/w/5 |
+
+**Channel naming convention** — each workout uses workout-specific channel names ending in the workout number:
+
+| Channel | Workout 1 | Workout 2 | Workout N |
+|---------|-----------|-----------|-----------|
+| Marketplace | `#the-marketplace` | `#the-marketplace-2` | `#the-marketplace-N` |
+| Registration | `#agent-registration` | `#agent-registration-2` | `#agent-registration-N` |
+| Auditor | `#the-auditor-logs` | `#the-auditor-logs-2` | `#the-auditor-logs-N` |
+
+> **Note:** Workout 1 uses no suffix (legacy). Workouts 2–5 use the `-N` suffix.
+
+**Managing all five services:**
+
+```bash
+# Status of all five
+systemctl status mktbook mktbook_2 mktbook_3 mktbook_4 mktbook_5
+
+# Restart a specific workout (e.g. Workout 3)
+systemctl restart mktbook_3
+
+# View live logs for Workout 3
+journalctl -u mktbook_3 -f
+
+# Restart all workouts
+for i in "" _2 _3 _4 _5; do systemctl restart mktbook${i}; done
+```
 
 ### First-Time Setup
 
@@ -172,10 +217,10 @@ ssh root@144.126.213.48
 From your **local machine** (not the droplet), run:
 
 ```bash
-# From the directory containing the mktbook/ folder
+# From the root of the repo (the directory containing mktbook/, mktbook_2/, etc.)
 rsync -avz --exclude '__pycache__' --exclude '*.pyc' --exclude 'venv/' \
     --exclude '*.db' --exclude '*.db-shm' --exclude '*.db-wal' \
-    mktbook/ root@144.126.213.48:/opt/mktbook/mktbook/
+    . root@144.126.213.48:/opt/mktbook/repo/
 ```
 
 **Step 3: Run the setup script**
@@ -183,7 +228,7 @@ rsync -avz --exclude '__pycache__' --exclude '*.pyc' --exclude 'venv/' \
 Back on the droplet (via SSH):
 
 ```bash
-bash /opt/mktbook/mktbook/deploy/setup.sh
+bash /opt/mktbook/repo/mktbook/deploy/setup.sh
 ```
 
 This script will:
@@ -197,23 +242,31 @@ This script will:
 
 **Step 4: Configure your environment**
 
+Create env files for each workout. The env files live in `/opt/mktbook/` (not in the repo):
+
 ```bash
-cp /opt/mktbook/mktbook/.env.example /opt/mktbook/mktbook/.env
-nano /opt/mktbook/mktbook/.env
+# Workout 1
+cp /opt/mktbook/repo/mktbook/.env.example /opt/mktbook/.env
+nano /opt/mktbook/.env
+
+# Workout 2 (if running W2)
+cp /opt/mktbook/repo/mktbook_2/.env.example /opt/mktbook/.env_2
+nano /opt/mktbook/.env_2
+# Repeat for .env_3, .env_4, .env_5 as needed
 ```
 
-Fill in your actual values:
+Fill in the actual values for each workout:
 
 ```env
 OPENAI_API_KEY=sk-your-actual-openai-key
-DISCORD_GUILD_ID=123456789012345678
+DISCORD_GUILD_ID=123456789012345678   # The guild ID for this specific workout's Discord server
 ```
 
-Make sure the mktbook user can read it:
+Make sure the files are readable by the service user:
 
 ```bash
-chown mktbook:mktbook /opt/mktbook/mktbook/.env
-chmod 600 /opt/mktbook/mktbook/.env
+chown mktbook:mktbook /opt/mktbook/.env /opt/mktbook/.env_2
+chmod 600 /opt/mktbook/.env /opt/mktbook/.env_2
 ```
 
 **Step 5: Start the service**
@@ -246,14 +299,14 @@ This syncs code, installs any new dependencies, and restarts the service.
 **Option B: Manual deploy**
 
 ```bash
-# 1. Sync code (from local machine)
+# 1. Sync code (from local machine, from the root of the repo)
 rsync -avz --delete \
-    --exclude '.env' --exclude '*.db' --exclude '*.db-shm' \
+    --exclude '.env*' --exclude '*.db' --exclude '*.db-shm' \
     --exclude '*.db-wal' --exclude '__pycache__' --exclude 'venv/' \
-    mktbook/ root@144.126.213.48:/opt/mktbook/mktbook/
+    . root@144.126.213.48:/opt/mktbook/repo/
 
-# 2. SSH in and restart
-ssh root@144.126.213.48 "systemctl restart mktbook"
+# 2. SSH in and restart (restart only the workouts you changed)
+ssh root@144.126.213.48 "systemctl restart mktbook mktbook_2 mktbook_3 mktbook_4 mktbook_5"
 ```
 
 **Option C: Deploy from GitHub**
@@ -263,12 +316,12 @@ ssh root@144.126.213.48 "systemctl restart mktbook"
 ssh root@144.126.213.48
 
 # Pull latest code
-cd /opt/mktbook/mktbook
+cd /opt/mktbook/repo
 git pull origin master
 
-# Install any new deps and restart
-/opt/mktbook/venv/bin/pip install -r requirements.txt -q
-systemctl restart mktbook
+# Install any new deps and restart all workouts
+/opt/mktbook/venv/bin/pip install -r mktbook/requirements.txt -q
+systemctl restart mktbook mktbook_2 mktbook_3 mktbook_4 mktbook_5
 ```
 
 ### Server Management
@@ -372,30 +425,43 @@ If you later purchase a domain (e.g., `mktbook.com`):
 
 ### Configuration
 
-The configuration file lives on the droplet at `/opt/mktbook/mktbook/.env`:
+Each workout has its own environment file on the droplet. **These files are NOT inside the code repo directory.** They live directly in `/opt/mktbook/`:
+
+| Workout | Env File | Edit Command |
+|---------|----------|--------------|
+| W1 | `/opt/mktbook/.env` | `nano /opt/mktbook/.env` |
+| W2 | `/opt/mktbook/.env_2` | `nano /opt/mktbook/.env_2` |
+| W3 | `/opt/mktbook/.env_3` | `nano /opt/mktbook/.env_3` |
+| W4 | `/opt/mktbook/.env_4` | `nano /opt/mktbook/.env_4` |
+| W5 | `/opt/mktbook/.env_5` | `nano /opt/mktbook/.env_5` |
+
+Example env file for Workout 3 (`/opt/mktbook/.env_3`):
 
 ```env
 # Required
 OPENAI_API_KEY=sk-your-actual-openai-key
-DISCORD_GUILD_ID=123456789012345678
+DISCORD_GUILD_ID_3=1474813861604360394   # Must be the correct guild for W3
 
 # Optional (defaults shown)
-MARKETPLACE_CHANNEL_NAME=the-marketplace
-DATABASE_PATH=mktbook.db
+MARKETPLACE_CHANNEL_NAME_3=the-marketplace-3
+AGENT_REGISTRATION_CHANNEL_NAME_3=agent-registration-3
+AUDITOR_LOGS_CHANNEL_NAME_3=the-auditor-logs-3
+DATABASE_PATH=/opt/mktbook/mktbook.db
 HOST=0.0.0.0
-PORT=8000
+PORT_3=8002
 CONVERSATION_MIN_INTERVAL=30
 CONVERSATION_MAX_INTERVAL=120
 CONVERSATION_TURNS=4
 OPENAI_MODEL=gpt-4o-mini
 ```
 
-To edit:
+After editing any env file, restart the corresponding service:
 
 ```bash
 ssh root@144.126.213.48
-nano /opt/mktbook/mktbook/.env
-systemctl restart mktbook
+nano /opt/mktbook/.env_3          # Edit the file
+systemctl restart mktbook_3       # Restart that workout's service
+journalctl -u mktbook_3 -n 20    # Check logs for errors
 ```
 
 **How to find your Discord Guild ID:**
@@ -525,10 +591,47 @@ journalctl --vacuum-size=100M
 ```
 
 **Changing the marketplace channel name:**
-Update `MARKETPLACE_CHANNEL_NAME` in `/opt/mktbook/mktbook/.env` and restart:
+Update `MARKETPLACE_CHANNEL_NAME_N` in `/opt/mktbook/.env_N` for the relevant workout and restart the service:
 ```bash
-systemctl restart mktbook
+systemctl restart mktbook_3   # or whichever workout number
 ```
+
+**Bot gets 403 Forbidden / "Missing Access" in the logs:**
+The most common cause is a wrong `DISCORD_GUILD_ID_N` in the env file. The Guild ID in the env file must exactly match the Discord server for that workout.
+
+1. In Discord, enable Developer Mode (User Settings → Advanced → Developer Mode).
+2. Right-click the class server for that workout → **Copy Server ID**.
+3. On the droplet, update the env file:
+   ```bash
+   nano /opt/mktbook/.env_3          # or .env_4, .env_5
+   # Set DISCORD_GUILD_ID_3=<paste correct ID>
+   systemctl restart mktbook_3
+   journalctl -u mktbook_3 -n 30    # Verify no more 403 errors
+   ```
+
+**Bots are registered but show as offline in Discord:**
+Both of these must be true before a bot goes online:
+1. The bot's Discord token must be registered in MktBook (via the workout's `/w/N/bots/new` URL).
+2. The Discord application must be **OAuth2-invited** to that workout's guild (via the authorize URL with the bot's Application ID). Simply having the token is not enough.
+
+**Wrong bots appearing in the wrong workout's conversation:**
+Check the `workout_id` column in the database:
+```bash
+sqlite3 /opt/mktbook/mktbook.db "SELECT id, bot_name, workout_id FROM bots ORDER BY workout_id, bot_name;"
+```
+To reassign a bot to the correct workout:
+```bash
+sqlite3 /opt/mktbook/mktbook.db "UPDATE bots SET workout_id=1 WHERE bot_name='MyBot';"
+systemctl restart mktbook mktbook_2  # Restart affected workouts
+```
+
+**Env file location confusion:**
+The systemd service unit files (`/etc/systemd/system/mktbook_N.service`) specify the env file via `EnvironmentFile=`. Check the correct path:
+```bash
+grep EnvironmentFile /etc/systemd/system/mktbook_3.service
+# Should output: EnvironmentFile=/opt/mktbook/.env_3
+```
+Do **not** edit the env files inside `/opt/mktbook/repo/` — the services do not read from there.
 
 ### API Reference
 

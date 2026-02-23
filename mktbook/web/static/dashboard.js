@@ -3,6 +3,12 @@
 (function() {
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${location.host}/ws`;
+    // Read the current page's workout id (set by w_dashboard.html).
+    // If not set (e.g. legacy dashboard), accept all events.
+    const pageWorkoutId = (typeof window.MKTBOOK_WORKOUT_ID !== 'undefined')
+        ? window.MKTBOOK_WORKOUT_ID
+        : null;
+
     let ws = null;
     let reconnectDelay = 1000;
     let maxRetries = 5;
@@ -16,13 +22,20 @@
         ws = new WebSocket(wsUrl);
 
         ws.onopen = function() {
-            console.log('MktBook WS connected');
+            console.log('MktBook WS connected (workout', pageWorkoutId, ')');
             reconnectDelay = 1000;
             retryCount = 0;
         };
 
         ws.onmessage = function(event) {
             const data = JSON.parse(event.data);
+            // Only show events that belong to this workout's dashboard.
+            // Events without workout_id (legacy) are shown on all dashboards.
+            if (pageWorkoutId !== null &&
+                data.workout_id !== undefined &&
+                data.workout_id !== pageWorkoutId) {
+                return;
+            }
             handleEvent(data);
         };
 

@@ -88,6 +88,7 @@ class ConversationScheduler:
         if self.ws:
             await self.ws.broadcast({
                 "type": "conversation_start",
+                "workout_id": initiator.bot_row.workout_id,
                 "initiator": initiator.bot_row.bot_name,
                 "responder": responder.bot_row.bot_name,
             })
@@ -118,6 +119,7 @@ class ConversationScheduler:
             if self.ws:
                 await self.ws.broadcast({
                     "type": "message",
+                    "workout_id": initiator.bot_row.workout_id,
                     "bot": initiator.bot_row.bot_name,
                     "content": init_text,
                     "conversation_type": "bot-bot",
@@ -145,6 +147,7 @@ class ConversationScheduler:
             if self.ws:
                 await self.ws.broadcast({
                     "type": "message",
+                    "workout_id": responder.bot_row.workout_id,
                     "bot": responder.bot_row.bot_name,
                     "content": resp_text,
                     "conversation_type": "bot-bot",
@@ -156,7 +159,11 @@ class ConversationScheduler:
         log.info("Conversation #%d complete (%d turns)", conv.id, turns)
 
         if self.ws:
-            await self.ws.broadcast({"type": "conversation_end", "conversation_id": conv.id})
+            await self.ws.broadcast({
+                "type": "conversation_end",
+                "workout_id": initiator.bot_row.workout_id,
+                "conversation_id": conv.id,
+            })
 
     def stop(self) -> None:
         self._running = False

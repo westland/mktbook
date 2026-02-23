@@ -96,6 +96,7 @@ class SingleBot:
         if self.ws:
             await self.ws.broadcast({
                 "type": "message",
+                "workout_id": self.bot_row.workout_id,
                 "bot": self.bot_row.bot_name,
                 "content": reply_text,
                 "conversation_type": "bot-human",

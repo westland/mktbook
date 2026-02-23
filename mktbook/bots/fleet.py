@@ -122,6 +122,7 @@ class BotFleet:
         if self.ws:
             await self.ws.broadcast({
                 "type": "message",
+                "workout_id": workout_id,
                 "bot": author_name,
                 "content": content,
                 "conversation_type": "bot-human",

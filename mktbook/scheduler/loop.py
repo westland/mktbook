@@ -38,7 +38,20 @@ class ConversationScheduler:
                 break
 
             active = list(self.fleet.active_bots.values())
-            bot_rows = [b.bot_row for b in active]
+
+            # Group bots by workout_id — never pair bots across workouts
+            by_workout: dict[int, list] = {}
+            for b in active:
+                by_workout.setdefault(b.bot_row.workout_id, []).append(b)
+
+            # Only consider workouts that have at least 2 active bots
+            eligible = {wid: bots for wid, bots in by_workout.items() if len(bots) >= 2}
+            if not eligible:
+                continue
+
+            # Pick a random workout to run a conversation in
+            workout_id = random.choice(list(eligible.keys()))
+            bot_rows = [b.bot_row for b in eligible[workout_id]]
             pair = await select_pair(bot_rows)
             if pair is None:
                 continue

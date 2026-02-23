@@ -392,7 +392,7 @@ async def login_page(request: Request, next: str = "/admin") -> HTMLResponse:
     })
 
 
-@router.post("/login")
+@router.post("/login", response_model=None)
 async def login_submit(
     request: Request,
     password: str = Form(...),
@@ -428,7 +428,7 @@ async def change_password_page(request: Request, done: str = "") -> HTMLResponse
     })
 
 
-@router.post("/admin/password")
+@router.post("/admin/password", response_model=None)
 async def change_password_submit(
     request: Request,
     current_password: str = Form(...),

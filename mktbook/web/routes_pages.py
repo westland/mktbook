@@ -261,6 +261,102 @@ async def w_platform_post(
     return RedirectResponse(url=f"/w/{workout_id}/platform", status_code=303)
 
 
+# ── Admin / Reset ──────────────────────────────────────────────────────
+
+@router.get("/w/{workout_id}/admin", response_class=HTMLResponse)
+async def w_admin_page(
+    request: Request,
+    workout_id: int,
+    done: str = "",
+) -> HTMLResponse:
+    workout = get_workout(workout_id)
+    if not workout:
+        return HTMLResponse("<h1>Workout not found</h1>", status_code=404)
+    stats = await queries.get_workout_stats(workout_id)
+    return TEMPLATES.TemplateResponse("w_admin.html", {
+        "request": request,
+        "workout": workout,
+        "stats": stats,
+        "done": done,
+        "active_page": "admin",
+    })
+
+
+@router.post("/w/{workout_id}/admin/reset/conversations")
+async def w_admin_reset_conversations(
+    request: Request,
+    workout_id: int,
+) -> RedirectResponse:
+    """Wipe all messages, conversations, and grades for this workout."""
+    counts = await queries.reset_conversations_for_workout(workout_id)
+    fleet = request.app.state.fleet
+    # No bots to stop — just data cleared
+    return RedirectResponse(
+        url=f"/w/{workout_id}/admin?done=conversations&msgs={counts['messages']}&convs={counts['conversations']}&grades={counts['grades']}",
+        status_code=303,
+    )
+
+
+@router.post("/w/{workout_id}/admin/reset/bots")
+async def w_admin_reset_bots(
+    request: Request,
+    workout_id: int,
+) -> RedirectResponse:
+    """Wipe all bots AND their data for this workout."""
+    fleet = request.app.state.fleet
+    if fleet:
+        await fleet.remove_bots_for_workout(workout_id)
+    counts = await queries.reset_bots_for_workout(workout_id)
+    return RedirectResponse(
+        url=f"/w/{workout_id}/admin?done=bots&bots={counts['bots']}&msgs={counts['messages']}&convs={counts['conversations']}",
+        status_code=303,
+    )
+
+
+@router.get("/admin", response_class=HTMLResponse)
+async def global_admin_page(
+    request: Request,
+    done: str = "",
+) -> HTMLResponse:
+    from mktbook.web.workouts import all_workouts
+    workouts = all_workouts()
+    global_stats = await queries.get_global_stats()
+    per_workout = {}
+    for w in workouts:
+        per_workout[w.id] = await queries.get_workout_stats(w.id)
+    return TEMPLATES.TemplateResponse("admin.html", {
+        "request": request,
+        "workout": None,
+        "workouts": workouts,
+        "global_stats": global_stats,
+        "per_workout": per_workout,
+        "done": done,
+    })
+
+
+@router.post("/admin/reset/conversations")
+async def global_admin_reset_conversations(request: Request) -> RedirectResponse:
+    """Wipe ALL messages, conversations, and grades across every workout."""
+    counts = await queries.reset_all_conversations()
+    return RedirectResponse(
+        url=f"/admin?done=conversations&msgs={counts['messages']}&convs={counts['conversations']}&grades={counts['grades']}",
+        status_code=303,
+    )
+
+
+@router.post("/admin/reset/all")
+async def global_admin_reset_all(request: Request) -> RedirectResponse:
+    """Nuclear reset — wipe all bots and all data across every workout."""
+    fleet = request.app.state.fleet
+    if fleet:
+        await fleet.stop_all()
+    counts = await queries.reset_all()
+    return RedirectResponse(
+        url=f"/admin?done=all&bots={counts['bots']}&msgs={counts['messages']}&convs={counts['conversations']}",
+        status_code=303,
+    )
+
+
 # ── Legacy routes (kept for backward compatibility) ────────────────────
 
 @router.get("/dashboard", response_class=HTMLResponse)

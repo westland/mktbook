@@ -77,6 +77,13 @@ class BotFleet:
             except Exception:
                 log.exception("Error polling for new bots")
 
+    async def remove_bots_for_workout(self, workout_id: int) -> int:
+        """Stop and unregister all fleet workers belonging to a workout."""
+        to_stop = [bid for bid, w in self._bots.items() if w.bot_row.workout_id == workout_id]
+        for bid in to_stop:
+            await self.stop_bot(bid)
+        return len(to_stop)
+
     async def dispatch_human_message(
         self,
         workout_id: int,

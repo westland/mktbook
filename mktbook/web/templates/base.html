@@ -26,6 +26,7 @@
             <li><a href="/w/{{ workout.id }}/bots" {% if active_page == 'bots' %}aria-current="page"{% endif %}>Bots</a></li>
             <li><a href="/w/{{ workout.id }}/platform" {% if active_page == 'platform' %}aria-current="page"{% endif %}>Platform</a></li>
             <li><a href="/w/{{ workout.id }}/grading" {% if active_page == 'grading' %}aria-current="page"{% endif %}>Grading</a></li>
+            <li><a href="/w/{{ workout.id }}/admin" {% if active_page == 'admin' %}aria-current="page"{% endif %}>Admin</a></li>
             <li><a href="/" class="outline secondary" style="font-size:0.8em; padding: 0.2rem 0.6rem;">&#8592; All Workouts</a></li>
             {% else %}
             <li><a href="/dashboard">Dashboard</a></li>

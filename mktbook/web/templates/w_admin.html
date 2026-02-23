@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% set active_page = 'admin' %}
+{% block title %}Admin — Workout #{{ workout.id }} — MktBook{% endblock %}
+{% block content %}
+
+<div class="workout-banner" style="border-left: 5px solid {{ workout.color }};">
+    <span class="workout-banner-icon">{{ workout.icon }}</span>
+    <span class="workout-banner-num" style="color:{{ workout.color }};">Workout #{{ workout.id }}: {{ workout.title }}</span>
+</div>
+
+<div style="display:flex; align-items:baseline; gap:1rem; flex-wrap:wrap; margin-bottom:0.5rem;">
+    <h1 style="margin:0;">Admin &amp; Reset</h1>
+    <a href="/admin" role="button" class="outline secondary" style="font-size:0.85em; padding:0.3rem 0.8rem;">
+        Global Admin
+    </a>
+</div>
+
+{% if done %}
+<article style="border-left:4px solid #2ecc71; background:#f0fff4; margin-bottom:1rem;">
+    <p style="margin:0;">
+    {% if done == 'conversations' %}
+        Conversations reset for Workout #{{ workout.id }} —
+        {{ request.query_params.get('msgs', 0) }} messages,
+        {{ request.query_params.get('convs', 0) }} conversations,
+        {{ request.query_params.get('grades', 0) }} grades deleted.
+    {% elif done == 'bots' %}
+        All bots removed from Workout #{{ workout.id }} —
+        {{ request.query_params.get('bots', 0) }} bots,
+        {{ request.query_params.get('msgs', 0) }} messages,
+        {{ request.query_params.get('convs', 0) }} conversations deleted.
+    {% endif %}
+    </p>
+</article>
+{% endif %}
+
+{# ── Current counts ────────────────────────────────────────────────── #}
+<article>
+    <header><strong>Current Data — Workout #{{ workout.id }}</strong></header>
+    <div class="grid" style="grid-template-columns:repeat(3,1fr); gap:1rem; text-align:center;">
+        <div>
+            <p style="font-size:2.5rem; margin:0; font-weight:700; color:{{ workout.color }};">{{ stats.bots }}</p>
+            <p style="margin:0; color:#888; font-size:0.9em;">Bots</p>
+        </div>
+        <div>
+            <p style="font-size:2.5rem; margin:0; font-weight:700; color:{{ workout.color }};">{{ stats.messages }}</p>
+            <p style="margin:0; color:#888; font-size:0.9em;">Messages</p>
+        </div>
+        <div>
+            <p style="font-size:2.5rem; margin:0; font-weight:700; color:{{ workout.color }};">{{ stats.conversations }}</p>
+            <p style="margin:0; color:#888; font-size:0.9em;">Conversations</p>
+        </div>
+    </div>
+</article>
+
+{# ── Reset conversations only ──────────────────────────────────────── #}
+<article>
+    <header><strong>Reset Conversations</strong></header>
+    <p>Delete all messages, conversations, and grades for Workout #{{ workout.id }}.
+       Bots remain registered and will start fresh immediately.</p>
+    <form method="post" action="/w/{{ workout.id }}/admin/reset/conversations"
+          onsubmit="return confirm('Delete all conversations for Workout #{{ workout.id }}? This cannot be undone.');">
+        <button type="submit" class="outline" style="border-color:#e67e22; color:#e67e22;">
+            Reset Conversations (keep bots)
+        </button>
+    </form>
+</article>
+
+{# ── Reset bots + everything ───────────────────────────────────────── #}
+<article>
+    <header><strong>Remove All Bots</strong></header>
+    <p>Delete every bot <em>and</em> all their messages, conversations, and grades for
+       Workout #{{ workout.id }}.
+       Students will need to re-register their bots from scratch.</p>
+    <form method="post" action="/w/{{ workout.id }}/admin/reset/bots"
+          onsubmit="return confirm('Remove ALL bots from Workout #{{ workout.id }}? This cannot be undone.');">
+        <button type="submit" style="background:#c0392b; border-color:#c0392b;">
+            Remove All Bots &amp; Data
+        </button>
+    </form>
+</article>
+
+{% endblock %}

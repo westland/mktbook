@@ -341,6 +341,92 @@ async def get_grades_by_run(grading_run_id: str) -> list[Grade]:
     return [_row_to_grade(r) for r in rows]
 
 
+# ── Admin / Reset ─────────────────────────────────────────────────────
+
+async def get_workout_stats(workout_id: int) -> dict[str, int]:
+    """Return bot, message, and conversation counts for a workout."""
+    db = await get_db()
+    bot_count = (await (await db.execute(
+        "SELECT COUNT(*) as c FROM bots WHERE workout_id = ?", (workout_id,)
+    )).fetchone())["c"]
+    msg_count = (await (await db.execute(
+        """SELECT COUNT(*) as c FROM messages m
+           LEFT JOIN bots b ON m.bot_id = b.id
+           WHERE b.workout_id = ?""", (workout_id,)
+    )).fetchone())["c"]
+    conv_count = (await (await db.execute(
+        """SELECT COUNT(DISTINCT c.id) as c FROM conversations c
+           LEFT JOIN bots b ON (b.id = c.initiator_bot_id OR b.id = c.responder_bot_id)
+           WHERE b.workout_id = ?""", (workout_id,)
+    )).fetchone())["c"]
+    return {"bots": bot_count, "messages": msg_count, "conversations": conv_count}
+
+
+async def get_global_stats() -> dict[str, int]:
+    """Return total bot, message, and conversation counts across all workouts."""
+    db = await get_db()
+    bot_count = (await (await db.execute("SELECT COUNT(*) as c FROM bots")).fetchone())["c"]
+    msg_count = (await (await db.execute("SELECT COUNT(*) as c FROM messages")).fetchone())["c"]
+    conv_count = (await (await db.execute("SELECT COUNT(*) as c FROM conversations")).fetchone())["c"]
+    return {"bots": bot_count, "messages": msg_count, "conversations": conv_count}
+
+
+async def reset_conversations_for_workout(workout_id: int) -> dict[str, int]:
+    """Delete all messages, conversations, grades, and pair counts for a workout."""
+    db = await get_db()
+    bot_rows = await (await db.execute(
+        "SELECT id FROM bots WHERE workout_id = ?", (workout_id,)
+    )).fetchall()
+    bot_ids = [r["id"] for r in bot_rows]
+    if not bot_ids:
+        return {"messages": 0, "conversations": 0, "grades": 0}
+
+    ph = ",".join("?" * len(bot_ids))
+    r1 = await db.execute(f"DELETE FROM messages WHERE bot_id IN ({ph})", bot_ids)
+    r2 = await db.execute(
+        f"DELETE FROM conversations WHERE initiator_bot_id IN ({ph}) OR responder_bot_id IN ({ph})",
+        bot_ids + bot_ids,
+    )
+    r3 = await db.execute(f"DELETE FROM grades WHERE bot_id IN ({ph})", bot_ids)
+    await db.execute(
+        f"DELETE FROM conversation_pairs WHERE bot_a_id IN ({ph}) OR bot_b_id IN ({ph})",
+        bot_ids + bot_ids,
+    )
+    await db.commit()
+    return {"messages": r1.rowcount, "conversations": r2.rowcount, "grades": r3.rowcount}
+
+
+async def reset_bots_for_workout(workout_id: int) -> dict[str, int]:
+    """Delete all bots AND their conversations/messages/grades for a workout."""
+    counts = await reset_conversations_for_workout(workout_id)
+    db = await get_db()
+    r = await db.execute("DELETE FROM bots WHERE workout_id = ?", (workout_id,))
+    counts["bots"] = r.rowcount
+    await db.commit()
+    return counts
+
+
+async def reset_all_conversations() -> dict[str, int]:
+    """Delete all messages, conversations, grades, and pair counts across all workouts."""
+    db = await get_db()
+    r1 = await db.execute("DELETE FROM messages")
+    r2 = await db.execute("DELETE FROM conversations")
+    r3 = await db.execute("DELETE FROM grades")
+    await db.execute("DELETE FROM conversation_pairs")
+    await db.commit()
+    return {"messages": r1.rowcount, "conversations": r2.rowcount, "grades": r3.rowcount}
+
+
+async def reset_all() -> dict[str, int]:
+    """Nuclear option — delete everything: all bots and all conversation data."""
+    counts = await reset_all_conversations()
+    db = await get_db()
+    r = await db.execute("DELETE FROM bots")
+    counts["bots"] = r.rowcount
+    await db.commit()
+    return counts
+
+
 # ── Stats ─────────────────────────────────────────────────────────────
 
 async def get_bot_stats(bot_id: int) -> dict[str, int]:

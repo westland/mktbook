@@ -1,138 +1,88 @@
-"""Per-student Discord bot client for mktbook_3 (Agentic Economy)."""
+"""Per-student internal bot worker for mktbook_3 (Agentic Economy)."""
 from __future__ import annotations
 
-import asyncio
 import logging
+from typing import TYPE_CHECKING
 
-import discord
 from openai import AsyncOpenAI
 
+from mktbook.bots.conversation import build_reply_messages
 from mktbook.db import queries
 from mktbook.db.models import Bot
 from mktbook_3.config import settings
 
+if TYPE_CHECKING:
+    from mktbook.web.websocket import WSManager
+
 log = logging.getLogger(__name__)
 
-_PERSONA_DESCRIPTIONS = {
-    "arbitrage": (
-        "You exploit market inefficiencies and price gaps. "
-        "You seek deals others overlook. You buy low and sell high. "
-        "Be opportunistic, analytical, and specific about value."
-    ),
-    "outreach": (
-        "You are a cold-calling closer. Lead with a compelling value proposition "
-        "and overcome objections with persistence and empathy. "
-        "Build rapport, then close hard."
-    ),
-    "intelligence": (
-        "You gather market intelligence through negotiation. "
-        "Offer data and insights in exchange for concessions. "
-        "Ask strategic questions and turn information into leverage."
-    ),
-}
 
+class SingleBot:
+    """An internal bot worker for one student's negotiation bot (mktbook_3)."""
 
-class SingleBot(discord.Client):
-    """A Discord client for one student's negotiation bot (mktbook_3)."""
-
-    def __init__(self, bot_row: Bot, openai_client: AsyncOpenAI) -> None:
-        intents = discord.Intents.default()
-        intents.message_content = True
-        intents.guilds = True
-        super().__init__(intents=intents)
-
+    def __init__(self, bot_row: Bot, openai_client: AsyncOpenAI, ws: WSManager | None = None) -> None:
         self.bot_row = bot_row
         self.openai = openai_client
-        self._guild: discord.Guild | None = None
-        self._channel: discord.TextChannel | None = None
-        self._registration_channel: discord.TextChannel | None = None
-        self._auditor_channel: discord.TextChannel | None = None
-        self._ready_event = asyncio.Event()
+        self.ws = ws
 
     @property
-    def marketplace_channel(self) -> discord.TextChannel | None:
-        return self._channel
+    def marketplace_channel(self) -> bool:
+        return True
 
-    @property
-    def persona(self) -> str:
-        """Derive negotiation persona from personality field."""
-        p = (self.bot_row.personality or "").lower()
-        for valid in ("arbitrage", "intelligence"):
-            if valid in p:
-                return valid
-        return "outreach"
+    async def wait_until_marketplace_ready(self) -> None:
+        return
 
-    async def on_ready(self) -> None:
-        log.info("mktbook_3 Bot %s (%s) is online", self.bot_row.bot_name, self.user)
-        self._guild = self.get_guild(settings.discord_guild_id)
-        if self._guild:
-            for ch in self._guild.text_channels:
-                if ch.name == settings.marketplace_channel_name:
-                    self._channel = ch
-                elif ch.name == settings.agent_registration_channel_name:
-                    self._registration_channel = ch
-                elif ch.name == settings.auditor_logs_channel_name:
-                    self._auditor_channel = ch
-
-            if self._registration_channel:
-                objective = self.bot_row.objective or ""
-                preview = objective[:120] + "..." if len(objective) > 120 else objective
-                await self._registration_channel.send(
-                    f"🤝 **{self.bot_row.bot_name}** is ready to negotiate\n"
-                    f"👤 Student: {self.bot_row.student_name}\n"
-                    f"🎯 Deal Strategy: {preview}"
-                )
-
-        self._ready_event.set()
-
-    async def send_to_marketplace(self, content: str) -> discord.Message | None:
-        """Send a message to the marketplace channel."""
-        if self._channel is None:
-            return None
-        return await self._channel.send(content)
-
-    async def post_to_auditor_logs(self, content: str) -> None:
-        if self._auditor_channel:
-            await self._auditor_channel.send(content)
-
-    async def generate_negotiation_message(
-        self,
-        counterparty_name: str,
-        counterparty_persona: str,
-        conversation_history: list[dict],
-        is_initiator: bool = False,
-    ) -> str:
-        """Generate a negotiation message using LLM with chain-of-thought."""
-        persona_desc = _PERSONA_DESCRIPTIONS.get(self.persona, "Close deals effectively.")
-
-        system_prompt = (
-            f"You are {self.bot_row.bot_name}, an autonomous negotiation agent.\n\n"
-            f"Your deal strategy:\n{self.bot_row.objective or 'Close deals and maximize value'}\n\n"
-            f"Your negotiation persona: {self.persona.upper()} — {persona_desc}\n\n"
-            f"Your objection handling rules:\n"
-            f"{self.bot_row.behavior_rules or 'Be persistent but adaptable.'}\n\n"
-            f"You are {'initiating' if is_initiator else 'responding in'} a negotiation "
-            f"with {counterparty_name} (a {counterparty_persona} bot).\n\n"
-            "Rules:\n"
-            "- Keep responses to 1-3 sentences\n"
-            "- Be concrete: name prices, terms, or data\n"
-            "- To close: use 'I accept', 'Deal', or 'Agreed' clearly\n"
-            "- Never repeat the same pitch twice — adapt when objections arise\n"
-            "- Sound natural, not robotic"
-        )
-
-        messages = [{"role": "system", "content": system_prompt}]
-        for msg in conversation_history[-10:]:
-            messages.append(msg)
-
+    async def generate_response(self, llm_messages: list[dict[str, str]]) -> str:
         try:
             resp = await self.openai.chat.completions.create(
                 model=settings.openai_model,
-                messages=messages,  # type: ignore[arg-type]
-                max_tokens=150,
+                messages=llm_messages,  # type: ignore[arg-type]
+                max_tokens=256,
                 temperature=0.8,
             )
             return resp.choices[0].message.content or "(no response)"
         except Exception:
             log.exception("OpenAI error for bot %s", self.bot_row.bot_name)
             return "(error generating response)"
+
+    async def send_to_marketplace(self, content: str) -> None:
+        return None
+
+    async def post_to_auditor_logs(self, content: str) -> None:
+        return None
+
+    async def respond_to_human(
+        self,
+        human_name: str,
+        message_content: str,
+        conversation_id: int,
+    ) -> str | None:
+        recent = await queries.get_messages(limit=10, bot_id=self.bot_row.id)
+        recent.reverse()
+        llm_messages = build_reply_messages(self.bot_row, human_name, message_content, recent)
+        try:
+            resp = await self.openai.chat.completions.create(
+                model=settings.openai_model,
+                messages=llm_messages,  # type: ignore[arg-type]
+                max_tokens=256,
+                temperature=0.8,
+            )
+            reply_text = resp.choices[0].message.content or "(no response)"
+        except Exception:
+            log.exception("OpenAI error for bot %s responding to human", self.bot_row.bot_name)
+            return None
+        await queries.create_message(
+            conversation_id=conversation_id,
+            bot_id=self.bot_row.id,
+            author_type="bot",
+            author_name=self.bot_row.bot_name,
+            content=reply_text,
+        )
+        if self.ws:
+            await self.ws.broadcast({
+                "type": "message",
+                "bot": self.bot_row.bot_name,
+                "content": reply_text,
+                "conversation_type": "bot-human",
+            })
+        return reply_text

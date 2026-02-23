@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS bots (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     student_name    TEXT    NOT NULL,
     bot_name        TEXT    NOT NULL UNIQUE,
-    discord_token   TEXT    NOT NULL,
+    discord_token   TEXT    NOT NULL DEFAULT '',
     personality     TEXT    NOT NULL DEFAULT '',
     objective       TEXT    NOT NULL DEFAULT '',
     behavior_rules  TEXT    NOT NULL DEFAULT '',

@@ -1,9 +1,6 @@
 # mktbook_2 Python Dependencies
 # Install with: pip install -r requirements.txt
 
-# Core Discord Integration
-discord.py>=2.3,<3
-
 # Web Framework
 fastapi>=0.110,<1
 uvicorn[standard]>=0.29,<1

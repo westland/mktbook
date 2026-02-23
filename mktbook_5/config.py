@@ -15,10 +15,6 @@ class Settings(BaseSettings):
     )
 
     openai_api_key: str
-    discord_guild_id: int
-    marketplace_channel_name: str = "the-marketplace"
-    agent_registration_channel_name: str = "agent-registration"
-    auditor_logs_channel_name: str = "the-auditor-logs"
     database_path: str = "mktbook.db"
     host: str = "0.0.0.0"
     port: int = 8004

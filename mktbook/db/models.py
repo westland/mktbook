@@ -8,7 +8,6 @@ class Bot:
     id: int
     student_name: str
     bot_name: str
-    discord_token: str
     personality: str
     objective: str
     behavior_rules: str

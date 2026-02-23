@@ -38,7 +38,6 @@ class ConversationScheduler:
                 break
 
             active = list(self.fleet.active_bots.values())
-            # Need bot_row objects for pairing
             bot_rows = [b.bot_row for b in active]
             pair = await select_pair(bot_rows)
             if pair is None:
@@ -49,8 +48,6 @@ class ConversationScheduler:
             responder = self.fleet.get_bot(responder_row.id)
 
             if not initiator or not responder:
-                continue
-            if not initiator.marketplace_channel or not responder.marketplace_channel:
                 continue
 
             try:
@@ -65,7 +62,7 @@ class ConversationScheduler:
         responder: SingleBot
 
         conv = await queries.create_conversation(
-            channel_id=str(initiator.marketplace_channel.id) if initiator.marketplace_channel else None,
+            channel_id=f"platform-w{initiator.bot_row.workout_id}",
             conv_type="bot-bot",
             initiator_bot_id=initiator.bot_row.id,
             responder_bot_id=responder.bot_row.id,
@@ -94,7 +91,7 @@ class ConversationScheduler:
                 partner_name=responder.bot_row.bot_name,
             )
             init_text = await initiator.generate_response(llm_msgs)
-            sent = await initiator.send_to_marketplace(init_text)
+            await initiator.send_to_marketplace(init_text)
 
             init_msg = await queries.create_message(
                 conversation_id=conv.id,
@@ -102,7 +99,6 @@ class ConversationScheduler:
                 author_type="bot",
                 author_name=initiator.bot_row.bot_name,
                 content=init_text,
-                discord_msg_id=str(sent.id) if sent else None,
             )
             messages_so_far.append(init_msg)
 
@@ -122,7 +118,7 @@ class ConversationScheduler:
                 messages_so_far,
             )
             resp_text = await responder.generate_response(llm_msgs)
-            sent = await responder.send_to_marketplace(resp_text)
+            await responder.send_to_marketplace(resp_text)
 
             resp_msg = await queries.create_message(
                 conversation_id=conv.id,
@@ -130,7 +126,6 @@ class ConversationScheduler:
                 author_type="bot",
                 author_name=responder.bot_row.bot_name,
                 content=resp_text,
-                discord_msg_id=str(sent.id) if sent else None,
             )
             messages_so_far.append(resp_msg)
 

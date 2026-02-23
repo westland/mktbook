@@ -104,7 +104,6 @@ async def w_bot_form_submit(
     workout_id: int,
     student_name: str = Form(...),
     bot_name: str = Form(...),
-    discord_token: str = Form(...),
     personality: str = Form(""),
     objective: str = Form(""),
     behavior_rules: str = Form(""),
@@ -115,7 +114,6 @@ async def w_bot_form_submit(
     bot = await queries.create_bot(
         student_name=student_name,
         bot_name=bot_name,
-        discord_token=discord_token,
         personality=personality,
         objective=objective,
         behavior_rules=behavior_rules,
@@ -170,7 +168,6 @@ async def w_bot_form_update(
     bot_id: int,
     student_name: str = Form(...),
     bot_name: str = Form(...),
-    discord_token: str = Form(...),
     personality: str = Form(""),
     objective: str = Form(""),
     behavior_rules: str = Form(""),
@@ -180,7 +177,6 @@ async def w_bot_form_update(
         bot_id,
         student_name=student_name,
         bot_name=bot_name,
-        discord_token=discord_token,
         personality=personality,
         objective=objective,
         behavior_rules=behavior_rules,
@@ -214,7 +210,15 @@ async def w_grading_page(request: Request, workout_id: int) -> HTMLResponse:
 
 
 @router.get("/w/{workout_id}/messages", response_class=HTMLResponse)
-async def w_messages_page(
+async def w_messages_redirect(workout_id: int) -> RedirectResponse:
+    """Legacy messages URL — redirect to platform."""
+    return RedirectResponse(url=f"/w/{workout_id}/platform", status_code=302)
+
+
+# ── Platform (discussion forum replacement for Discord) ────────────────
+
+@router.get("/w/{workout_id}/platform", response_class=HTMLResponse)
+async def w_platform_page(
     request: Request,
     workout_id: int,
     bot_id: int | None = None,
@@ -223,19 +227,38 @@ async def w_messages_page(
     if not workout:
         return HTMLResponse("<h1>Workout not found</h1>", status_code=404)
     bots = await queries.get_all_bots(workout_id=workout_id)
-    bot_ids = {b.id for b in bots}
     if bot_id is not None:
-        msgs = await queries.get_messages(limit=200, bot_id=bot_id)
+        msgs = await queries.get_messages(limit=500, bot_id=bot_id)
     else:
-        all_msgs = await queries.get_messages(limit=500)
-        msgs = [m for m in all_msgs if m.bot_id in bot_ids][:200]
-    return TEMPLATES.TemplateResponse("w_messages.html", {
+        msgs = await queries.get_messages_for_workout(workout_id=workout_id, limit=500)
+    return TEMPLATES.TemplateResponse("w_platform.html", {
         "request": request,
         "workout": workout,
         "messages": msgs,
         "bots": bots,
         "selected_bot_id": bot_id,
     })
+
+
+@router.post("/w/{workout_id}/platform/post")
+async def w_platform_post(
+    request: Request,
+    workout_id: int,
+    author_name: str = Form(...),
+    message_content: str = Form(...),
+) -> RedirectResponse:
+    """Accept a human message posted from the platform and dispatch to bots."""
+    workout = get_workout(workout_id)
+    if not workout:
+        return HTMLResponse("<h1>Workout not found</h1>", status_code=404)
+    fleet = request.app.state.fleet
+    if fleet and message_content.strip():
+        await fleet.dispatch_human_message(
+            workout_id=workout_id,
+            author_name=author_name.strip() or "Visitor",
+            content=message_content.strip(),
+        )
+    return RedirectResponse(url=f"/w/{workout_id}/platform", status_code=303)
 
 
 # ── Legacy routes (kept for backward compatibility) ────────────────────
@@ -289,7 +312,6 @@ async def bot_form_submit(
     request: Request,
     student_name: str = Form(...),
     bot_name: str = Form(...),
-    discord_token: str = Form(...),
     personality: str = Form(""),
     objective: str = Form(""),
     behavior_rules: str = Form(""),
@@ -297,7 +319,6 @@ async def bot_form_submit(
     bot = await queries.create_bot(
         student_name=student_name,
         bot_name=bot_name,
-        discord_token=discord_token,
         personality=personality,
         objective=objective,
         behavior_rules=behavior_rules,
@@ -342,7 +363,6 @@ async def bot_form_update(
     bot_id: int,
     student_name: str = Form(...),
     bot_name: str = Form(...),
-    discord_token: str = Form(...),
     personality: str = Form(""),
     objective: str = Form(""),
     behavior_rules: str = Form(""),
@@ -352,7 +372,6 @@ async def bot_form_update(
         bot_id,
         student_name=student_name,
         bot_name=bot_name,
-        discord_token=discord_token,
         personality=personality,
         objective=objective,
         behavior_rules=behavior_rules,

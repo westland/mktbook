@@ -38,12 +38,6 @@
     </div>
 
     <label>
-        Discord Token
-        <input type="password" name="discord_token" value="{{ bot.discord_token if bot else '' }}" required>
-        <small>Create at <a href="https://discord.com/developers/applications" target="_blank">Discord Developer Portal</a></small>
-    </label>
-
-    <label>
         {{ workout.personality_label }}
         <textarea name="personality" rows="4">{{ bot.personality if bot else '' }}</textarea>
         <small>{{ workout.personality_hint }}</small>
@@ -65,7 +59,7 @@
     <fieldset>
         <label>
             <input type="checkbox" name="is_active" role="switch" {% if bot.is_active %}checked{% endif %}>
-            Bot Active (running in Discord guild)
+            Bot Active
         </label>
     </fieldset>
     {% endif %}

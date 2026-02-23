@@ -1,10 +1,8 @@
-"""Per-student Discord bot client for mktbook_5 (Bayesian Showdown)."""
+"""Per-student internal bot worker for mktbook_5 (Bayesian Showdown)."""
 from __future__ import annotations
 
-import asyncio
 import logging
 
-import discord
 from openai import AsyncOpenAI
 
 from mktbook.db.models import Bot
@@ -32,29 +30,24 @@ _STRATEGY_PROMPTS = {
 }
 
 
-class SingleBot(discord.Client):
-    """A Discord client for one student A/B marketing bot (mktbook_5)."""
+class SingleBot:
+    """An internal bot worker for one student A/B marketing bot (mktbook_5).
+
+    No Discord connection — participates in the internal platform only.
+    """
 
     def __init__(self, bot_row: Bot, openai_client: AsyncOpenAI) -> None:
-        intents = discord.Intents.default()
-        intents.message_content = True
-        intents.guilds = True
-        super().__init__(intents=intents)
         self.bot_row = bot_row
         self.openai = openai_client
-        self._guild: discord.Guild | None = None
-        self._channel: discord.TextChannel | None = None
-        self._registration_channel: discord.TextChannel | None = None
-        self._auditor_channel: discord.TextChannel | None = None
-        self._ready_event = asyncio.Event()
 
         # Performance tracking for Bayesian engine
         self.impressions: int = 0
         self.engagements: int = 0
 
     @property
-    def marketplace_channel(self) -> discord.TextChannel | None:
-        return self._channel
+    def marketplace_channel(self) -> bool:
+        """Always True — no real channel needed, signals bot is ready."""
+        return True
 
     @property
     def ecosystem(self) -> str:
@@ -76,56 +69,37 @@ class SingleBot(discord.Client):
             return "emotional"
         return "passive"
 
-    async def on_ready(self) -> None:
-        log.info("mktbook_5 Bot %s (%s) is online", self.bot_row.bot_name, self.user)
-        self._guild = self.get_guild(settings.discord_guild_id)
-        if self._guild:
-            for ch in self._guild.text_channels:
-                if ch.name == settings.marketplace_channel_name:
-                    self._channel = ch
-                elif ch.name == settings.agent_registration_channel_name:
-                    self._registration_channel = ch
-                elif ch.name == settings.auditor_logs_channel_name:
-                    self._auditor_channel = ch
-            if self._registration_channel:
-                objective = self.bot_row.objective or ""
-                preview = objective[:120] + "..." if len(objective) > 120 else objective
-                await self._registration_channel.send(
-                    f"📊 **{self.bot_row.bot_name}** joined Ecosystem {self.ecosystem}
-"
-                    f"👤 Student: {self.bot_row.student_name}
-"
-                    f"🧪 Hypothesis: {preview}"
-                )
-        self._ready_event.set()
-
-    async def send_to_marketplace(self, content: str) -> discord.Message | None:
-        if self._channel is None:
-            return None
-        return await self._channel.send(content)
+    async def send_to_marketplace(self, content: str) -> None:
+        """No-op: content is stored directly in the DB by the scheduler."""
+        return None
 
     async def post_to_auditor_logs(self, content: str) -> None:
-        if self._auditor_channel:
-            await self._auditor_channel.send(content)
+        """No-op: auditor results are stored in DB / shown in grading UI."""
+        return None
+
+    async def generate_response(self, llm_messages: list[dict[str, str]]) -> str:
+        """Generate an LLM response given prebuilt messages (used by scheduler)."""
+        try:
+            resp = await self.openai.chat.completions.create(
+                model=settings.openai_model,
+                messages=llm_messages,  # type: ignore[arg-type]
+                max_tokens=256,
+                temperature=0.8,
+            )
+            return resp.choices[0].message.content or "(no response)"
+        except Exception:
+            log.exception("OpenAI error for bot %s", self.bot_row.bot_name)
+            return "(error generating response)"
 
     async def generate_marketing_pitch(self, context: str) -> str:
         """Generate a marketing pitch based on this bot's strategy."""
         strategy_desc = _STRATEGY_PROMPTS.get(self.strategy_type, _STRATEGY_PROMPTS["passive"])
         system_prompt = (
-            f"You are {self.bot_row.bot_name}, a marketing bot in Ecosystem {self.ecosystem}.
-
-"
-            f"Strategy: {self.strategy_type.upper()} — {strategy_desc}
-
-"
-            f"Your test hypothesis: {self.bot_row.objective or 'Outperform the other ecosystem'}
-"
-            f"Your behavioral constraints: {self.bot_row.behavior_rules or 'Stay on strategy'}
-
-"
-            f"Context: {context}
-
-"
+            f"You are {self.bot_row.bot_name}, a marketing bot in Ecosystem {self.ecosystem}.\n\n"
+            f"Strategy: {self.strategy_type.upper()} — {strategy_desc}\n\n"
+            f"Your test hypothesis: {self.bot_row.objective or 'Outperform the other ecosystem'}\n"
+            f"Your behavioral constraints: {self.bot_row.behavior_rules or 'Stay on strategy'}\n\n"
+            f"Context: {context}\n\n"
             "Generate a 1-3 sentence marketing pitch for a product or idea. "
             "Stay true to your strategy. Sound natural."
         )

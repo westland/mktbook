@@ -1,4 +1,4 @@
-"""Manages the fleet of Discord bot clients for mktbook_5."""
+"""Manages the fleet of internal bot workers for mktbook_5."""
 from __future__ import annotations
 
 import asyncio
@@ -14,12 +14,11 @@ log = logging.getLogger(__name__)
 
 
 class BotFleet:
-    """Manages all active Discord bot instances (mktbook_5)."""
+    """Manages all active internal bot workers (mktbook_5)."""
 
     def __init__(self, openai_client: AsyncOpenAI) -> None:
         self.openai = openai_client
         self._bots: dict[int, SingleBot] = {}
-        self._tasks: dict[int, asyncio.Task[None]] = {}
 
     @property
     def active_bots(self) -> dict[int, SingleBot]:
@@ -30,35 +29,23 @@ class BotFleet:
 
     async def start_bot(self, bot_row: Bot) -> None:
         if bot_row.id in self._bots:
-            log.warning("Bot %s already running", bot_row.bot_name)
+            log.warning("Bot %s already registered", bot_row.bot_name)
             return
-        client = SingleBot(bot_row, self.openai)
-        self._bots[bot_row.id] = client
-
-        async def _run() -> None:
-            try:
-                await client.start(bot_row.discord_token)
-            except Exception:
-                log.exception("Bot %s crashed", bot_row.bot_name)
-            finally:
-                self._bots.pop(bot_row.id, None)
-                self._tasks.pop(bot_row.id, None)
-
-        self._tasks[bot_row.id] = asyncio.create_task(_run())
-        log.info("Launched mktbook_5 bot %s (id=%d)", bot_row.bot_name, bot_row.id)
+        worker = SingleBot(bot_row, self.openai)
+        self._bots[bot_row.id] = worker
+        log.info("Registered mktbook_5 bot %s (id=%d, ecosystem=%s)",
+                 bot_row.bot_name, bot_row.id, worker.ecosystem)
 
     async def stop_bot(self, bot_id: int) -> None:
-        client = self._bots.pop(bot_id, None)
-        task = self._tasks.pop(bot_id, None)
-        if client:
-            await client.close()
-        if task and not task.done():
-            task.cancel()
+        worker = self._bots.pop(bot_id, None)
+        if worker:
+            log.info("Unregistered mktbook_5 bot id=%d", bot_id)
 
     async def start_all(self) -> None:
         bots = await queries.get_active_bots(workout_id=5)
         for bot in bots:
             await self.start_bot(bot)
+        log.info("mktbook_5 fleet ready — %d bots loaded", len(self._bots))
 
     async def stop_all(self) -> None:
         for bid in list(self._bots.keys()):
@@ -77,7 +64,7 @@ class BotFleet:
                 bots = await queries.get_active_bots(workout_id=5)
                 for bot in bots:
                     if bot.id not in self._bots:
-                        log.info("New bot detected: %s — starting", bot.bot_name)
+                        log.info("New bot detected: %s — registering", bot.bot_name)
                         await self.start_bot(bot)
             except Exception:
                 log.exception("Error polling for new bots")

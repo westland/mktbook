@@ -42,19 +42,17 @@ async def test_config():
         
         checks = [
             (settings.openai_api_key, "OPENAI_API_KEY"),
-            (settings.discord_guild_id, "DISCORD_GUILD_ID"),
-            (settings.marketplace_channel_name, "MARKETPLACE_CHANNEL_NAME"),
             (settings.database_path, "DATABASE_PATH"),
             (settings.port, "PORT"),
         ]
-        
+
         all_ok = True
         for value, name in checks:
             if value and str(value) != "0":
                 print(f"  ✓ {name}: {value}")
             else:
                 print(f"  ⚠ {name}: {value} (may need .env_2)")
-                if name in ["OPENAI_API_KEY", "DISCORD_GUILD_ID"]:
+                if name in ["OPENAI_API_KEY"]:
                     all_ok = False
         
         if all_ok:

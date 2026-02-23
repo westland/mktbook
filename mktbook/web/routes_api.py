@@ -1,10 +1,13 @@
 """REST API routes."""
 from __future__ import annotations
 
+import csv
+import io
 import uuid
 from typing import Any
 
 from fastapi import APIRouter, Request
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from mktbook.db import queries
@@ -15,16 +18,15 @@ router = APIRouter(prefix="/api")
 class BotCreate(BaseModel):
     student_name: str
     bot_name: str
-    discord_token: str
     personality: str = ""
     objective: str = ""
     behavior_rules: str = ""
+    workout_id: int = 1
 
 
 class BotUpdate(BaseModel):
     student_name: str | None = None
     bot_name: str | None = None
-    discord_token: str | None = None
     personality: str | None = None
     objective: str | None = None
     behavior_rules: str | None = None
@@ -40,6 +42,7 @@ def _bot_to_dict(bot) -> dict[str, Any]:
         "objective": bot.objective,
         "behavior_rules": bot.behavior_rules,
         "is_active": bot.is_active,
+        "workout_id": bot.workout_id,
         "created_at": bot.created_at,
     }
 
@@ -57,12 +60,12 @@ async def create_bot(body: BotCreate, request: Request) -> dict[str, Any]:
     bot = await queries.create_bot(
         student_name=body.student_name,
         bot_name=body.bot_name,
-        discord_token=body.discord_token,
         personality=body.personality,
         objective=body.objective,
         behavior_rules=body.behavior_rules,
+        workout_id=body.workout_id,
     )
-    # Start the bot in the fleet
+    # Register the bot in the fleet
     fleet = request.app.state.fleet
     if fleet:
         await fleet.start_bot(bot)
@@ -176,27 +179,6 @@ async def run_grading(request: Request) -> dict[str, Any]:
     evaluator = GradeEvaluator(openai_client)
     grades = await evaluator.grade_all(run_id)
 
-    # Post grading summary to #the-auditor-logs
-    fleet = request.app.state.fleet
-    if fleet and grades:
-        bots_dict = {b.id: b for b in await queries.get_all_bots()}
-        sorted_grades = sorted(grades, key=lambda g: g.overall_score, reverse=True)
-        medals = ["🥇", "🥈", "🥉"]
-        lines = [f"📊 **Grading Run Complete** — `{run_id}`", ""]
-        for i, g in enumerate(sorted_grades):
-            bot = bots_dict.get(g.bot_id)
-            medal = medals[i] if i < 3 else f"{i + 1}."
-            name = bot.bot_name if bot else f"Bot#{g.bot_id}"
-            student = bot.student_name if bot else "Unknown"
-            lines.append(f"{medal} **{name}** — {g.overall_score:.1f}/100 | {student}")
-        audit_msg = "\n".join(lines)
-        for bot_client in fleet.active_bots.values():
-            try:
-                await bot_client.post_to_auditor_logs(audit_msg)
-                break
-            except Exception:
-                continue
-
     ws = request.app.state.ws
     if ws:
         await ws.broadcast({"type": "grading_complete", "run_id": run_id, "count": len(grades)})
@@ -219,3 +201,32 @@ async def export_grades() -> dict[str, Any]:
     from mktbook.grading.export import export_csv
     csv_text = await export_csv()
     return {"csv": csv_text}
+
+
+# ── Platform CSV export ────────────────────────────────────────────────
+
+@router.get("/w/{workout_id}/messages/export.csv")
+async def export_messages_csv(workout_id: int) -> StreamingResponse:
+    """Download all messages for a workout as a CSV file."""
+    msgs = await queries.get_messages_for_workout(workout_id=workout_id, limit=10000)
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["id", "timestamp", "author_name", "author_type", "content", "conversation_id"])
+    for m in reversed(msgs):  # chronological order
+        writer.writerow([
+            m.id,
+            m.created_at,
+            m.author_name,
+            m.author_type,
+            m.content,
+            m.conversation_id or "",
+        ])
+
+    output.seek(0)
+    filename = f"mktbook_w{workout_id}_messages.csv"
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

@@ -11,7 +11,6 @@ def _row_to_bot(row: Any) -> Bot:
         id=row["id"],
         student_name=row["student_name"],
         bot_name=row["bot_name"],
-        discord_token=row["discord_token"],
         personality=row["personality"],
         objective=row["objective"],
         behavior_rules=row["behavior_rules"],
@@ -70,7 +69,6 @@ def _row_to_grade(row: Any) -> Grade:
 async def create_bot(
     student_name: str,
     bot_name: str,
-    discord_token: str,
     personality: str = "",
     objective: str = "",
     behavior_rules: str = "",
@@ -78,9 +76,9 @@ async def create_bot(
 ) -> Bot:
     db = await get_db()
     cursor = await db.execute(
-        """INSERT INTO bots (student_name, bot_name, discord_token, personality, objective, behavior_rules, workout_id)
-           VALUES (?, ?, ?, ?, ?, ?, ?)""",
-        (student_name, bot_name, discord_token, personality, objective, behavior_rules, workout_id),
+        """INSERT INTO bots (student_name, bot_name, personality, objective, behavior_rules, workout_id)
+           VALUES (?, ?, ?, ?, ?, ?)""",
+        (student_name, bot_name, personality, objective, behavior_rules, workout_id),
     )
     await db.commit()
     row = await (await db.execute("SELECT * FROM bots WHERE id = ?", (cursor.lastrowid,))).fetchone()
@@ -124,7 +122,7 @@ async def get_active_bots(workout_id: int | None = None) -> list[Bot]:
 async def update_bot(bot_id: int, **fields: Any) -> Bot | None:
     if not fields:
         return await get_bot(bot_id)
-    allowed = {"student_name", "bot_name", "discord_token", "personality", "objective", "behavior_rules", "is_active", "workout_id"}
+    allowed = {"student_name", "bot_name", "personality", "objective", "behavior_rules", "is_active", "workout_id"}
     filtered = {k: v for k, v in fields.items() if k in allowed}
     if not filtered:
         return await get_bot(bot_id)
@@ -232,6 +230,24 @@ async def get_messages(limit: int = 100, bot_id: int | None = None) -> list[Mess
     return [_row_to_message(r) for r in rows]
 
 
+async def get_messages_for_workout(workout_id: int, limit: int = 500) -> list[Message]:
+    """Return all messages (bot + human) scoped to a specific workout."""
+    db = await get_db()
+    rows = await (await db.execute(
+        """SELECT DISTINCT m.* FROM messages m
+           LEFT JOIN bots b ON m.bot_id = b.id
+           WHERE b.workout_id = ?
+              OR (m.author_type = 'human' AND m.conversation_id IN (
+                    SELECT c.id FROM conversations c
+                    JOIN bots b2 ON (b2.id = c.initiator_bot_id OR b2.id = c.responder_bot_id)
+                    WHERE b2.workout_id = ?
+                  ))
+           ORDER BY m.created_at DESC LIMIT ?""",
+        (workout_id, workout_id, limit),
+    )).fetchall()
+    return [_row_to_message(r) for r in rows]
+
+
 # ── Conversation Pairs ────────────────────────────────────────────────
 
 async def count_conversations_between(bot_a_id: int, bot_b_id: int) -> int:
@@ -244,23 +260,6 @@ async def count_conversations_between(bot_a_id: int, bot_b_id: int) -> int:
         (bot_a_id, bot_b_id, bot_b_id, bot_a_id),
     )).fetchone()
     return row["c"] if row else 0
-
-
-async def update_message_discord_id(
-    conversation_id: int, bot_id: int, discord_msg_id: str
-) -> None:
-    """Set the discord_msg_id on the most recent message for a (conversation, bot) pair."""
-    db = await get_db()
-    await db.execute(
-        """UPDATE messages SET discord_msg_id = ?
-           WHERE id = (
-               SELECT id FROM messages
-               WHERE conversation_id = ? AND bot_id = ?
-               ORDER BY created_at DESC LIMIT 1
-           )""",
-        (discord_msg_id, conversation_id, bot_id),
-    )
-    await db.commit()
 
 
 async def get_pair_counts() -> dict[tuple[int, int], int]:

@@ -8,11 +8,19 @@
     <span class="workout-banner-num" style="color:{{ workout.color }};">Workout #{{ workout.id }}: {{ workout.title }}</span>
 </div>
 
-<div style="display:flex; align-items:baseline; gap:1rem; flex-wrap:wrap; margin-bottom:0.5rem;">
+<div style="display:flex; align-items:baseline; gap:0.8rem; flex-wrap:wrap; margin-bottom:0.5rem;">
     <h1 style="margin:0;">Admin &amp; Reset</h1>
     <a href="/admin" role="button" class="outline secondary" style="font-size:0.85em; padding:0.3rem 0.8rem;">
         Global Admin
     </a>
+    <a href="/admin/password" role="button" class="outline secondary" style="font-size:0.85em; padding:0.3rem 0.8rem;">
+        Change Password
+    </a>
+    <form method="post" action="/logout" style="margin:0;">
+        <button type="submit" class="outline secondary" style="font-size:0.85em; padding:0.3rem 0.8rem;">
+            Log Out
+        </button>
+    </form>
 </div>
 
 {% if done %}

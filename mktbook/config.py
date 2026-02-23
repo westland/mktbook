@@ -25,5 +25,9 @@ class Settings(BaseSettings):
 
     openai_model: str = "gpt-4o-mini"
 
+    # Admin auth
+    admin_password: str = "mktbook"
+    secret_key: str = "mktbook-secret-change-me"
+
 
 settings = Settings()  # type: ignore[call-arg]

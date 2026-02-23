@@ -2,7 +2,17 @@
 {% block title %}Global Admin — MktBook{% endblock %}
 {% block content %}
 
-<h1>Global Admin &amp; Reset</h1>
+<div style="display:flex; align-items:baseline; gap:0.8rem; flex-wrap:wrap; margin-bottom:0.5rem;">
+    <h1 style="margin:0;">Global Admin &amp; Reset</h1>
+    <a href="/admin/password" role="button" class="outline secondary" style="font-size:0.85em; padding:0.3rem 0.8rem;">
+        Change Password
+    </a>
+    <form method="post" action="/logout" style="margin:0;">
+        <button type="submit" class="outline secondary" style="font-size:0.85em; padding:0.3rem 0.8rem;">
+            Log Out
+        </button>
+    </form>
+</div>
 <p style="color:#888;">Manage all workouts from one place. Use per-workout pages for targeted resets.</p>
 
 {% if done %}

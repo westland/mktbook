@@ -6,6 +6,14 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from mktbook.db import queries
 from mktbook.web.app import TEMPLATES
+from mktbook.web.auth import (
+    COOKIE_NAME,
+    get_password,
+    is_authenticated,
+    make_session_cookie,
+    redirect_to_login,
+    set_password,
+)
 from mktbook.web.workouts import all_workouts, get_workout
 
 router = APIRouter()
@@ -190,6 +198,8 @@ async def w_bot_form_update(
 
 @router.get("/w/{workout_id}/grading", response_class=HTMLResponse)
 async def w_grading_page(request: Request, workout_id: int) -> HTMLResponse:
+    if not is_authenticated(request):
+        return redirect_to_login(f"/w/{workout_id}/grading")
     workout = get_workout(workout_id)
     if not workout:
         return HTMLResponse("<h1>Workout not found</h1>", status_code=404)
@@ -269,6 +279,8 @@ async def w_admin_page(
     workout_id: int,
     done: str = "",
 ) -> HTMLResponse:
+    if not is_authenticated(request):
+        return redirect_to_login(f"/w/{workout_id}/admin")
     workout = get_workout(workout_id)
     if not workout:
         return HTMLResponse("<h1>Workout not found</h1>", status_code=404)
@@ -288,6 +300,8 @@ async def w_admin_reset_conversations(
     workout_id: int,
 ) -> RedirectResponse:
     """Wipe all messages, conversations, and grades for this workout."""
+    if not is_authenticated(request):
+        return redirect_to_login(f"/w/{workout_id}/admin")
     counts = await queries.reset_conversations_for_workout(workout_id)
     fleet = request.app.state.fleet
     # No bots to stop — just data cleared
@@ -303,6 +317,8 @@ async def w_admin_reset_bots(
     workout_id: int,
 ) -> RedirectResponse:
     """Wipe all bots AND their data for this workout."""
+    if not is_authenticated(request):
+        return redirect_to_login(f"/w/{workout_id}/admin")
     fleet = request.app.state.fleet
     if fleet:
         await fleet.remove_bots_for_workout(workout_id)
@@ -318,12 +334,14 @@ async def global_admin_page(
     request: Request,
     done: str = "",
 ) -> HTMLResponse:
+    if not is_authenticated(request):
+        return redirect_to_login("/admin")
     from mktbook.web.workouts import all_workouts
     workouts = all_workouts()
     global_stats = await queries.get_global_stats()
     per_workout = {}
     for w in workouts:
-        per_workout[w.id] = await queries.get_workout_stats(w.id)
+        per_workout[w["id"]] = await queries.get_workout_stats(w["id"])
     return TEMPLATES.TemplateResponse("admin.html", {
         "request": request,
         "workout": None,
@@ -337,6 +355,8 @@ async def global_admin_page(
 @router.post("/admin/reset/conversations")
 async def global_admin_reset_conversations(request: Request) -> RedirectResponse:
     """Wipe ALL messages, conversations, and grades across every workout."""
+    if not is_authenticated(request):
+        return redirect_to_login("/admin")
     counts = await queries.reset_all_conversations()
     return RedirectResponse(
         url=f"/admin?done=conversations&msgs={counts['messages']}&convs={counts['conversations']}&grades={counts['grades']}",
@@ -347,6 +367,8 @@ async def global_admin_reset_conversations(request: Request) -> RedirectResponse
 @router.post("/admin/reset/all")
 async def global_admin_reset_all(request: Request) -> RedirectResponse:
     """Nuclear reset — wipe all bots and all data across every workout."""
+    if not is_authenticated(request):
+        return redirect_to_login("/admin")
     fleet = request.app.state.fleet
     if fleet:
         await fleet.stop_all()
@@ -355,6 +377,82 @@ async def global_admin_reset_all(request: Request) -> RedirectResponse:
         url=f"/admin?done=all&bots={counts['bots']}&msgs={counts['messages']}&convs={counts['conversations']}",
         status_code=303,
     )
+
+
+# ── Login / Logout / Password ──────────────────────────────────────────
+
+@router.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request, next: str = "/admin") -> HTMLResponse:
+    if is_authenticated(request):
+        return RedirectResponse(url=next, status_code=302)
+    return TEMPLATES.TemplateResponse("login.html", {
+        "request": request,
+        "next": next,
+        "error": False,
+    })
+
+
+@router.post("/login")
+async def login_submit(
+    request: Request,
+    password: str = Form(...),
+    next: str = Form("/admin"),
+) -> HTMLResponse | RedirectResponse:
+    if password == get_password():
+        token = make_session_cookie()
+        response = RedirectResponse(url=next if next.startswith("/") else "/admin", status_code=303)
+        response.set_cookie(COOKIE_NAME, token, max_age=8 * 3600, httponly=True, samesite="lax")
+        return response
+    return TEMPLATES.TemplateResponse("login.html", {
+        "request": request,
+        "next": next,
+        "error": True,
+    }, status_code=401)
+
+
+@router.post("/logout")
+async def logout() -> RedirectResponse:
+    response = RedirectResponse(url="/", status_code=303)
+    response.delete_cookie(COOKIE_NAME)
+    return response
+
+
+@router.get("/admin/password", response_class=HTMLResponse)
+async def change_password_page(request: Request, done: str = "") -> HTMLResponse:
+    if not is_authenticated(request):
+        return redirect_to_login("/admin/password")
+    return TEMPLATES.TemplateResponse("admin_password.html", {
+        "request": request,
+        "workout": None,
+        "done": done,
+    })
+
+
+@router.post("/admin/password")
+async def change_password_submit(
+    request: Request,
+    current_password: str = Form(...),
+    new_password: str = Form(...),
+    confirm_password: str = Form(...),
+) -> HTMLResponse | RedirectResponse:
+    if not is_authenticated(request):
+        return redirect_to_login("/admin/password")
+    error = ""
+    if current_password != get_password():
+        error = "Current password is incorrect."
+    elif len(new_password) < 4:
+        error = "New password must be at least 4 characters."
+    elif new_password != confirm_password:
+        error = "New passwords do not match."
+    if error:
+        return TEMPLATES.TemplateResponse("admin_password.html", {
+            "request": request,
+            "workout": None,
+            "done": "",
+            "error": error,
+        }, status_code=422)
+    set_password(new_password)
+    return RedirectResponse(url="/admin/password?done=1", status_code=303)
 
 
 # ── Legacy routes (kept for backward compatibility) ────────────────────

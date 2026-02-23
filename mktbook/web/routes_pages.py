@@ -198,8 +198,6 @@ async def w_bot_form_update(
 
 @router.get("/w/{workout_id}/grading", response_class=HTMLResponse)
 async def w_grading_page(request: Request, workout_id: int) -> HTMLResponse:
-    if not is_authenticated(request):
-        return redirect_to_login(f"/w/{workout_id}/grading")
     workout = get_workout(workout_id)
     if not workout:
         return HTMLResponse("<h1>Workout not found</h1>", status_code=404)

@@ -30,9 +30,8 @@ async def get_db() -> aiosqlite.Connection:
             pass  # Column already exists
 
         # Migrate: change global UNIQUE on bot_name to per-workout UNIQUE(bot_name, workout_id)
-        # Also ensures discord_token has a DEFAULT '' and removes any orphan bots_new table.
-        # Uses individual execute() calls instead of executescript() so PRAGMA foreign_keys
-        # is properly respected and errors are not swallowed silently.
+        # Removes orphan bots_new if a previous migration attempt was interrupted.
+        # Uses individual execute() calls so PRAGMA foreign_keys=OFF is properly respected.
         try:
             cur = await _db.execute(
                 "SELECT sql FROM sqlite_master WHERE type='table' AND name='bots'"
@@ -46,7 +45,6 @@ async def get_db() -> aiosqlite.Connection:
                         id              INTEGER PRIMARY KEY AUTOINCREMENT,
                         student_name    TEXT    NOT NULL,
                         bot_name        TEXT    NOT NULL,
-                        discord_token   TEXT    NOT NULL DEFAULT '',
                         personality     TEXT    NOT NULL DEFAULT '',
                         objective       TEXT    NOT NULL DEFAULT '',
                         behavior_rules  TEXT    NOT NULL DEFAULT '',
@@ -58,10 +56,10 @@ async def get_db() -> aiosqlite.Connection:
                 """)
                 await _db.execute("""
                     INSERT OR IGNORE INTO bots_new
-                        SELECT id, student_name, bot_name,
-                               COALESCE(discord_token, '') as discord_token,
-                               personality, objective, behavior_rules,
-                               is_active, workout_id, created_at
+                        (id, student_name, bot_name, personality, objective,
+                         behavior_rules, is_active, workout_id, created_at)
+                        SELECT id, student_name, bot_name, personality, objective,
+                               behavior_rules, is_active, workout_id, created_at
                         FROM bots
                 """)
                 await _db.execute("DROP TABLE bots")

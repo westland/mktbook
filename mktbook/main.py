@@ -2,7 +2,7 @@
 
 Runs three concurrent subsystems on one asyncio event loop:
 1. FastAPI web server (Uvicorn)
-2. Discord bot fleet
+2. Internal bot fleet
 3. Autonomous conversation scheduler
 """
 from __future__ import annotations

@@ -41,7 +41,6 @@ def _row_to_message(row: Any) -> Message:
         author_type=row["author_type"],
         author_name=row["author_name"],
         content=row["content"],
-        discord_msg_id=row["discord_msg_id"],
         created_at=row["created_at"],
     )
 
@@ -76,8 +75,8 @@ async def create_bot(
 ) -> Bot:
     db = await get_db()
     cursor = await db.execute(
-        """INSERT INTO bots (student_name, bot_name, personality, objective, behavior_rules, workout_id, discord_token)
-           VALUES (?, ?, ?, ?, ?, ?, '')""",
+        """INSERT INTO bots (student_name, bot_name, personality, objective, behavior_rules, workout_id)
+           VALUES (?, ?, ?, ?, ?, ?)""",
         (student_name, bot_name, personality, objective, behavior_rules, workout_id),
     )
     await db.commit()
@@ -195,13 +194,12 @@ async def create_message(
     author_type: str,
     author_name: str,
     content: str,
-    discord_msg_id: str | None = None,
 ) -> Message:
     db = await get_db()
     cursor = await db.execute(
-        """INSERT INTO messages (conversation_id, bot_id, author_type, author_name, content, discord_msg_id)
-           VALUES (?, ?, ?, ?, ?, ?)""",
-        (conversation_id, bot_id, author_type, author_name, content, discord_msg_id),
+        """INSERT INTO messages (conversation_id, bot_id, author_type, author_name, content)
+           VALUES (?, ?, ?, ?, ?)""",
+        (conversation_id, bot_id, author_type, author_name, content),
     )
     await db.commit()
     row = await (await db.execute("SELECT * FROM messages WHERE id = ?", (cursor.lastrowid,))).fetchone()

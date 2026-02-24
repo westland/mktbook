@@ -2,7 +2,6 @@ CREATE TABLE IF NOT EXISTS bots (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     student_name    TEXT    NOT NULL,
     bot_name        TEXT    NOT NULL,
-    discord_token   TEXT    NOT NULL DEFAULT '',
     personality     TEXT    NOT NULL DEFAULT '',
     objective       TEXT    NOT NULL DEFAULT '',
     behavior_rules  TEXT    NOT NULL DEFAULT '',
@@ -30,7 +29,6 @@ CREATE TABLE IF NOT EXISTS messages (
     author_type     TEXT    NOT NULL DEFAULT 'bot',  -- 'bot' or 'human'
     author_name     TEXT    NOT NULL,
     content         TEXT    NOT NULL,
-    discord_msg_id  TEXT,
     created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 

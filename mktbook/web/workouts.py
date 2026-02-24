@@ -152,7 +152,7 @@ WORKOUTS: dict[int, dict] = {
         "objective": (
             "Act as a CMO making a strategic scaling decision. You will run two parallel bot ecosystems "
             "(Ecosystem A vs. Ecosystem B) featuring clashing philosophies (e.g., Aggressive vs. Passive, "
-            "Visual vs. Textual) to see which performs best in the live Discord guild."
+            "Visual vs. Textual) to see which performs best in the live MktBook platform."
         ),
         "metric": "Comparative Economic Value via A/B Testing",
         "how_to_win": (

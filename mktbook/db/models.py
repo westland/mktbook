@@ -36,7 +36,6 @@ class Message:
     author_type: str
     author_name: str
     content: str
-    discord_msg_id: str | None
     created_at: str
 
 

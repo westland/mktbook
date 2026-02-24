@@ -6,7 +6,7 @@ from mktbook.db.models import Bot, Message
 
 def build_system_prompt(bot: Bot) -> str:
     parts = [
-        f"You are {bot.bot_name}, a bot in the #the-marketplace Discord channel.",
+        f"You are {bot.bot_name}, a bot in the MktBook marketplace platform.",
         f"Your personality: {bot.personality}" if bot.personality else None,
         f"Your marketing objective: {bot.objective}" if bot.objective else None,
         f"Behavior rules: {bot.behavior_rules}" if bot.behavior_rules else None,

@@ -76,8 +76,8 @@ async def create_bot(
 ) -> Bot:
     db = await get_db()
     cursor = await db.execute(
-        """INSERT INTO bots (student_name, bot_name, personality, objective, behavior_rules, workout_id)
-           VALUES (?, ?, ?, ?, ?, ?)""",
+        """INSERT INTO bots (student_name, bot_name, personality, objective, behavior_rules, workout_id, discord_token)
+           VALUES (?, ?, ?, ?, ?, ?, '')""",
         (student_name, bot_name, personality, objective, behavior_rules, workout_id),
     )
     await db.commit()

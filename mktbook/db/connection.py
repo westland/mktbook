@@ -30,6 +30,7 @@ async def get_db() -> aiosqlite.Connection:
             pass  # Column already exists
 
         # Migrate: change global UNIQUE on bot_name to per-workout UNIQUE(bot_name, workout_id)
+        # Also ensures discord_token has a DEFAULT '' and removes any orphan bots_new table.
         try:
             cur = await _db.execute(
                 "SELECT sql FROM sqlite_master WHERE type='table' AND name='bots'"
@@ -37,6 +38,8 @@ async def get_db() -> aiosqlite.Connection:
             row = await cur.fetchone()
             if row and "unique(bot_name, workout_id)" not in row["sql"].lower():
                 await _db.executescript("""
+                    PRAGMA foreign_keys=OFF;
+                    DROP TABLE IF EXISTS bots_new;
                     CREATE TABLE bots_new (
                         id              INTEGER PRIMARY KEY AUTOINCREMENT,
                         student_name    TEXT    NOT NULL,
@@ -51,11 +54,14 @@ async def get_db() -> aiosqlite.Connection:
                         UNIQUE(bot_name, workout_id)
                     );
                     INSERT OR IGNORE INTO bots_new
-                        SELECT id, student_name, bot_name, discord_token, personality,
-                               objective, behavior_rules, is_active, workout_id, created_at
+                        SELECT id, student_name, bot_name,
+                               COALESCE(discord_token, '') as discord_token,
+                               personality, objective, behavior_rules,
+                               is_active, workout_id, created_at
                         FROM bots;
                     DROP TABLE bots;
                     ALTER TABLE bots_new RENAME TO bots;
+                    PRAGMA foreign_keys=ON;
                 """)
                 log.info("Migrated bots table: unique constraint is now per-workout (bot_name, workout_id)")
         except Exception as exc:

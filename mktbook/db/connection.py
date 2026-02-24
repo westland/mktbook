@@ -31,15 +31,17 @@ async def get_db() -> aiosqlite.Connection:
 
         # Migrate: change global UNIQUE on bot_name to per-workout UNIQUE(bot_name, workout_id)
         # Also ensures discord_token has a DEFAULT '' and removes any orphan bots_new table.
+        # Uses individual execute() calls instead of executescript() so PRAGMA foreign_keys
+        # is properly respected and errors are not swallowed silently.
         try:
             cur = await _db.execute(
                 "SELECT sql FROM sqlite_master WHERE type='table' AND name='bots'"
             )
             row = await cur.fetchone()
             if row and "unique(bot_name, workout_id)" not in row["sql"].lower():
-                await _db.executescript("""
-                    PRAGMA foreign_keys=OFF;
-                    DROP TABLE IF EXISTS bots_new;
+                await _db.execute("PRAGMA foreign_keys=OFF")
+                await _db.execute("DROP TABLE IF EXISTS bots_new")
+                await _db.execute("""
                     CREATE TABLE bots_new (
                         id              INTEGER PRIMARY KEY AUTOINCREMENT,
                         student_name    TEXT    NOT NULL,
@@ -52,20 +54,24 @@ async def get_db() -> aiosqlite.Connection:
                         workout_id      INTEGER NOT NULL DEFAULT 1,
                         created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
                         UNIQUE(bot_name, workout_id)
-                    );
+                    )
+                """)
+                await _db.execute("""
                     INSERT OR IGNORE INTO bots_new
                         SELECT id, student_name, bot_name,
                                COALESCE(discord_token, '') as discord_token,
                                personality, objective, behavior_rules,
                                is_active, workout_id, created_at
-                        FROM bots;
-                    DROP TABLE bots;
-                    ALTER TABLE bots_new RENAME TO bots;
-                    PRAGMA foreign_keys=ON;
+                        FROM bots
                 """)
+                await _db.execute("DROP TABLE bots")
+                await _db.execute("ALTER TABLE bots_new RENAME TO bots")
+                await _db.commit()
+                await _db.execute("PRAGMA foreign_keys=ON")
                 log.info("Migrated bots table: unique constraint is now per-workout (bot_name, workout_id)")
         except Exception as exc:
             log.warning("bots unique-constraint migration skipped: %s", exc)
+            await _db.execute("PRAGMA foreign_keys=ON")
     return _db
 
 

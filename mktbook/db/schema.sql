@@ -1,14 +1,15 @@
 CREATE TABLE IF NOT EXISTS bots (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,
     student_name    TEXT    NOT NULL,
-    bot_name        TEXT    NOT NULL UNIQUE,
+    bot_name        TEXT    NOT NULL,
     discord_token   TEXT    NOT NULL DEFAULT '',
     personality     TEXT    NOT NULL DEFAULT '',
     objective       TEXT    NOT NULL DEFAULT '',
     behavior_rules  TEXT    NOT NULL DEFAULT '',
     is_active       INTEGER NOT NULL DEFAULT 1,
     workout_id      INTEGER NOT NULL DEFAULT 1,
-    created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
+    created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(bot_name, workout_id)
 );
 
 CREATE TABLE IF NOT EXISTS conversations (

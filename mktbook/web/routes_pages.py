@@ -106,7 +106,7 @@ async def w_bot_form_new(request: Request, workout_id: int) -> HTMLResponse:
     })
 
 
-@router.post("/w/{workout_id}/bots/new")
+@router.post("/w/{workout_id}/bots/new", response_model=None)
 async def w_bot_form_submit(
     request: Request,
     workout_id: int,
@@ -115,18 +115,38 @@ async def w_bot_form_submit(
     personality: str = Form(""),
     objective: str = Form(""),
     behavior_rules: str = Form(""),
-) -> RedirectResponse:
+) -> HTMLResponse | RedirectResponse:
     workout = get_workout(workout_id)
     if not workout:
         return HTMLResponse("<h1>Workout not found</h1>", status_code=404)
-    bot = await queries.create_bot(
-        student_name=student_name,
-        bot_name=bot_name,
-        personality=personality,
-        objective=objective,
-        behavior_rules=behavior_rules,
-        workout_id=workout_id,
-    )
+    try:
+        bot = await queries.create_bot(
+            student_name=student_name,
+            bot_name=bot_name,
+            personality=personality,
+            objective=objective,
+            behavior_rules=behavior_rules,
+            workout_id=workout_id,
+        )
+    except Exception as exc:
+        error_msg = (
+            f"Bot name \"{bot_name}\" is already registered for this workout. Please choose a different name."
+            if "unique" in str(exc).lower()
+            else f"Could not register bot: {exc}"
+        )
+        return TEMPLATES.TemplateResponse("w_bot_form.html", {
+            "request": request,
+            "workout": workout,
+            "bot": None,
+            "error": error_msg,
+            "form_data": {
+                "student_name": student_name,
+                "bot_name": bot_name,
+                "personality": personality,
+                "objective": objective,
+                "behavior_rules": behavior_rules,
+            },
+        }, status_code=422)
     fleet = request.app.state.fleet
     if fleet:
         await fleet.start_bot(bot)

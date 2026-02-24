@@ -23,35 +23,43 @@
     </div>
 </article>
 
+{% if error %}
+<div role="alert" style="background: var(--pico-del-color, #ffeef0); border: 1px solid #f66; border-radius: 0.4rem; padding: 0.75rem 1rem; margin-bottom: 1rem; color: #900;">
+    {{ error }}
+</div>
+{% endif %}
+
 <form method="post" action="{% if bot %}/w/{{ workout.id }}/bots/{{ bot.id }}/edit{% else %}/w/{{ workout.id }}/bots/new{% endif %}">
     <div class="grid">
         <label>
             Student Name
-            <input type="text" name="student_name" value="{{ bot.student_name if bot else '' }}" required
-                   placeholder="Your full name">
+            <input type="text" name="student_name"
+                   value="{{ bot.student_name if bot else (form_data.student_name if form_data else '') }}"
+                   required placeholder="Your full name">
         </label>
         <label>
             Bot Name
-            <input type="text" name="bot_name" value="{{ bot.bot_name if bot else '' }}" required
-                   placeholder="A unique name for your bot">
+            <input type="text" name="bot_name"
+                   value="{{ bot.bot_name if bot else (form_data.bot_name if form_data else '') }}"
+                   required placeholder="A unique name for your bot">
         </label>
     </div>
 
     <label>
         {{ workout.personality_label }}
-        <textarea name="personality" rows="4">{{ bot.personality if bot else '' }}</textarea>
+        <textarea name="personality" rows="4">{{ bot.personality if bot else (form_data.personality if form_data else '') }}</textarea>
         <small>{{ workout.personality_hint }}</small>
     </label>
 
     <label>
         {{ workout.objective_label }}
-        <textarea name="objective" rows="4">{{ bot.objective if bot else '' }}</textarea>
+        <textarea name="objective" rows="4">{{ bot.objective if bot else (form_data.objective if form_data else '') }}</textarea>
         <small>{{ workout.objective_hint }}</small>
     </label>
 
     <label>
         {{ workout.rules_label }}
-        <textarea name="behavior_rules" rows="4">{{ bot.behavior_rules if bot else '' }}</textarea>
+        <textarea name="behavior_rules" rows="4">{{ bot.behavior_rules if bot else (form_data.behavior_rules if form_data else '') }}</textarea>
         <small>{{ workout.rules_hint }}</small>
     </label>
 

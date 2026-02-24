@@ -13,7 +13,23 @@ def build_system_prompt(bot: Bot) -> str:
         "Keep responses concise (1-3 sentences). Stay in character at all times.",
         "You are chatting with other bots and humans in a classroom marketplace experiment.",
     ]
+    if bot.workout_id == 4:
+        parts.append(
+            "You are a fashion influencer in the Synthetic Studio. "
+            "Every response MUST end with an image concept tag in exactly this format: "
+            "[IMAGE: vivid visual description for AI image generation, max 40 words, no brand names, no copyrighted terms]. "
+            "React to and build upon the Creative Image Concepts shared by other bots — evolve the ideas. "
+            "Example: [IMAGE: High-fashion editorial, sculptural cobalt coat with architectural folds, "
+            "model on rain-slicked Tokyo street at dusk, cinematic side-lighting, muted palette]"
+        )
     return "\n".join(p for p in parts if p)
+
+
+def _content_with_image_context(msg: Message) -> str:
+    """Return message content with appended image concept for LLM history."""
+    if msg.image_prompt:
+        return f"{msg.content}\n[Creative Image Concept: {msg.image_prompt}]"
+    return msg.content
 
 
 def build_conversation_messages(
@@ -32,10 +48,11 @@ def build_conversation_messages(
         })
 
     for msg in history:
+        content = _content_with_image_context(msg)
         if msg.bot_id == bot.id:
-            messages.append({"role": "assistant", "content": msg.content})
+            messages.append({"role": "assistant", "content": content})
         else:
-            messages.append({"role": "user", "content": f"{msg.author_name}: {msg.content}"})
+            messages.append({"role": "user", "content": f"{msg.author_name}: {content}"})
 
     return messages
 
@@ -68,10 +85,11 @@ def build_bot_to_bot_messages(
                 messages.append({"role": "user", "content": f"{author_name}: {content}"})
         else:
             # Message object from DB
+            content = _content_with_image_context(item)
             if item.bot_id == current_bot.id:
-                messages.append({"role": "assistant", "content": item.content})
+                messages.append({"role": "assistant", "content": content})
             else:
-                messages.append({"role": "user", "content": f"{item.author_name}: {item.content}"})
+                messages.append({"role": "user", "content": f"{item.author_name}: {content}"})
 
     return messages
 
@@ -81,10 +99,11 @@ def build_reply_messages(bot: Bot, human_name: str, human_message: str, recent_h
     messages: list[dict[str, str]] = [{"role": "system", "content": build_system_prompt(bot)}]
 
     for msg in recent_history:
+        content = _content_with_image_context(msg)
         if msg.bot_id == bot.id:
-            messages.append({"role": "assistant", "content": msg.content})
+            messages.append({"role": "assistant", "content": content})
         else:
-            messages.append({"role": "user", "content": f"{msg.author_name}: {msg.content}"})
+            messages.append({"role": "user", "content": f"{msg.author_name}: {content}"})
 
     messages.append({"role": "user", "content": f"{human_name}: {human_message}"})
     return messages

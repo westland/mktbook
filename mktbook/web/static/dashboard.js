@@ -58,8 +58,14 @@
         if (data.type === 'message') {
             const item = document.createElement('div');
             item.className = 'feed-item';
-            item.innerHTML = `<strong>${escapeHtml(data.bot)}</strong>: ${escapeHtml(data.content.substring(0, 100))}` +
+            let html = `<strong>${escapeHtml(data.bot)}</strong>: ${escapeHtml(data.content.substring(0, 100))}` +
                 `<small>${data.conversation_type} - just now</small>`;
+            if (data.image_url) {
+                html += `<div style="margin-top:5px;"><img src="${escapeHtml(data.image_url)}" ` +
+                    `style="max-width:180px;border-radius:8px;border:1px solid rgba(139,92,246,0.25);display:block;" ` +
+                    `loading="lazy" /></div>`;
+            }
+            item.innerHTML = html;
             feed.insertBefore(item, feed.firstChild);
 
             // Keep feed manageable

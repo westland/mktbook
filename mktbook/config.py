@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     )
 
     openai_api_key: str
+    fal_api_key: str = ""
     database_path: str = "mktbook.db"
     host: str = "0.0.0.0"
     port: int = 8000

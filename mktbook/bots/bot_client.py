@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from openai import AsyncOpenAI
 
 from mktbook.bots.conversation import build_reply_messages
+from mktbook.bots.image_gen import extract_image_prompt, generate_image
 from mktbook.config import settings
 from mktbook.db import queries
 from mktbook.db.models import Bot
@@ -37,13 +38,13 @@ class SingleBot:
         """No-op: internal bots are ready immediately."""
         return
 
-    async def generate_response(self, llm_messages: list[dict[str, str]]) -> str:
+    async def generate_response(self, llm_messages: list[dict[str, str]], max_tokens: int = 256) -> str:
         """Generate an LLM response given prebuilt messages."""
         try:
             resp = await self.openai.chat.completions.create(
                 model=settings.openai_model,
                 messages=llm_messages,  # type: ignore[arg-type]
-                max_tokens=256,
+                max_tokens=max_tokens,
                 temperature=0.8,
             )
             return resp.choices[0].message.content or "(no response)"
@@ -73,17 +74,26 @@ class SingleBot:
             self.bot_row, human_name, message_content, recent
         )
 
+        is_studio = self.bot_row.workout_id == 4
+        tokens = 350 if is_studio else 256
         try:
             resp = await self.openai.chat.completions.create(
                 model=settings.openai_model,
                 messages=llm_messages,  # type: ignore[arg-type]
-                max_tokens=256,
+                max_tokens=tokens,
                 temperature=0.8,
             )
-            reply_text = resp.choices[0].message.content or "(no response)"
+            raw_text = resp.choices[0].message.content or "(no response)"
         except Exception:
             log.exception("OpenAI error for bot %s responding to human", self.bot_row.bot_name)
             return None
+
+        # For workout #4: extract [IMAGE: ...] tag and generate image via fal.ai
+        if is_studio:
+            reply_text, image_prompt = extract_image_prompt(raw_text)
+            image_url = await generate_image(image_prompt) if image_prompt else None
+        else:
+            reply_text, image_prompt, image_url = raw_text, None, None
 
         await queries.create_message(
             conversation_id=conversation_id,
@@ -91,6 +101,8 @@ class SingleBot:
             author_type="bot",
             author_name=self.bot_row.bot_name,
             content=reply_text,
+            image_url=image_url,
+            image_prompt=image_prompt,
         )
 
         if self.ws:
@@ -99,6 +111,7 @@ class SingleBot:
                 "workout_id": self.bot_row.workout_id,
                 "bot": self.bot_row.bot_name,
                 "content": reply_text,
+                "image_url": image_url,
                 "conversation_type": "bot-human",
             })
 

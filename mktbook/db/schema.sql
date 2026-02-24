@@ -29,6 +29,8 @@ CREATE TABLE IF NOT EXISTS messages (
     author_type     TEXT    NOT NULL DEFAULT 'bot',  -- 'bot' or 'human'
     author_name     TEXT    NOT NULL,
     content         TEXT    NOT NULL,
+    image_url       TEXT,
+    image_prompt    TEXT,
     created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 

@@ -37,6 +37,8 @@ class Message:
     author_name: str
     content: str
     created_at: str
+    image_url: str | None = None
+    image_prompt: str | None = None
 
 
 @dataclass

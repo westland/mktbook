@@ -34,6 +34,7 @@ def _row_to_conversation(row: Any) -> Conversation:
 
 
 def _row_to_message(row: Any) -> Message:
+    keys = row.keys() if hasattr(row, "keys") else []
     return Message(
         id=row["id"],
         conversation_id=row["conversation_id"],
@@ -42,6 +43,8 @@ def _row_to_message(row: Any) -> Message:
         author_name=row["author_name"],
         content=row["content"],
         created_at=row["created_at"],
+        image_url=row["image_url"] if "image_url" in keys else None,
+        image_prompt=row["image_prompt"] if "image_prompt" in keys else None,
     )
 
 
@@ -194,12 +197,15 @@ async def create_message(
     author_type: str,
     author_name: str,
     content: str,
+    image_url: str | None = None,
+    image_prompt: str | None = None,
 ) -> Message:
     db = await get_db()
     cursor = await db.execute(
-        """INSERT INTO messages (conversation_id, bot_id, author_type, author_name, content)
-           VALUES (?, ?, ?, ?, ?)""",
-        (conversation_id, bot_id, author_type, author_name, content),
+        """INSERT INTO messages
+               (conversation_id, bot_id, author_type, author_name, content, image_url, image_prompt)
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        (conversation_id, bot_id, author_type, author_name, content, image_url, image_prompt),
     )
     await db.commit()
     row = await (await db.execute("SELECT * FROM messages WHERE id = ?", (cursor.lastrowid,))).fetchone()

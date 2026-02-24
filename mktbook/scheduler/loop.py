@@ -7,6 +7,7 @@ import random
 from typing import TYPE_CHECKING
 
 from mktbook.bots.conversation import build_conversation_messages
+from mktbook.bots.image_gen import extract_image_prompt, generate_image
 from mktbook.config import settings
 from mktbook.db import queries
 from mktbook.scheduler.pairing import select_pair
@@ -96,6 +97,9 @@ class ConversationScheduler:
         messages_so_far = []
         turns = settings.conversation_turns  # Each turn = 2 messages
 
+        is_studio = initiator.bot_row.workout_id == 4
+        tokens = 350 if is_studio else 256
+
         for turn in range(turns):
             # Initiator speaks
             llm_msgs = build_conversation_messages(
@@ -104,8 +108,14 @@ class ConversationScheduler:
                 opener=(turn == 0),
                 partner_name=responder.bot_row.bot_name,
             )
-            init_text = await initiator.generate_response(llm_msgs)
-            await initiator.send_to_marketplace(init_text)
+            init_raw = await initiator.generate_response(llm_msgs, max_tokens=tokens)
+            await initiator.send_to_marketplace(init_raw)
+
+            if is_studio:
+                init_text, init_image_prompt = extract_image_prompt(init_raw)
+                init_image_url = await generate_image(init_image_prompt) if init_image_prompt else None
+            else:
+                init_text, init_image_prompt, init_image_url = init_raw, None, None
 
             init_msg = await queries.create_message(
                 conversation_id=conv.id,
@@ -113,6 +123,8 @@ class ConversationScheduler:
                 author_type="bot",
                 author_name=initiator.bot_row.bot_name,
                 content=init_text,
+                image_url=init_image_url,
+                image_prompt=init_image_prompt,
             )
             messages_so_far.append(init_msg)
 
@@ -122,6 +134,7 @@ class ConversationScheduler:
                     "workout_id": initiator.bot_row.workout_id,
                     "bot": initiator.bot_row.bot_name,
                     "content": init_text,
+                    "image_url": init_image_url,
                     "conversation_type": "bot-bot",
                 })
 
@@ -132,8 +145,14 @@ class ConversationScheduler:
                 responder.bot_row,
                 messages_so_far,
             )
-            resp_text = await responder.generate_response(llm_msgs)
-            await responder.send_to_marketplace(resp_text)
+            resp_raw = await responder.generate_response(llm_msgs, max_tokens=tokens)
+            await responder.send_to_marketplace(resp_raw)
+
+            if is_studio:
+                resp_text, resp_image_prompt = extract_image_prompt(resp_raw)
+                resp_image_url = await generate_image(resp_image_prompt) if resp_image_prompt else None
+            else:
+                resp_text, resp_image_prompt, resp_image_url = resp_raw, None, None
 
             resp_msg = await queries.create_message(
                 conversation_id=conv.id,
@@ -141,6 +160,8 @@ class ConversationScheduler:
                 author_type="bot",
                 author_name=responder.bot_row.bot_name,
                 content=resp_text,
+                image_url=resp_image_url,
+                image_prompt=resp_image_prompt,
             )
             messages_so_far.append(resp_msg)
 
@@ -150,6 +171,7 @@ class ConversationScheduler:
                     "workout_id": responder.bot_row.workout_id,
                     "bot": responder.bot_row.bot_name,
                     "content": resp_text,
+                    "image_url": resp_image_url,
                     "conversation_type": "bot-bot",
                 })
 

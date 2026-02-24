@@ -29,6 +29,18 @@ async def get_db() -> aiosqlite.Connection:
         except Exception:
             pass  # Column already exists
 
+        try:
+            await _db.execute("ALTER TABLE messages ADD COLUMN image_url TEXT")
+            await _db.commit()
+        except Exception:
+            pass  # Column already exists
+
+        try:
+            await _db.execute("ALTER TABLE messages ADD COLUMN image_prompt TEXT")
+            await _db.commit()
+        except Exception:
+            pass  # Column already exists
+
         # Migrate: change global UNIQUE on bot_name to per-workout UNIQUE(bot_name, workout_id)
         # Removes orphan bots_new if a previous migration attempt was interrupted.
         # Uses individual execute() calls so PRAGMA foreign_keys=OFF is properly respected.

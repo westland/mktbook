@@ -16,9 +16,9 @@ def build_system_prompt(bot: Bot) -> str:
     if bot.workout_id == 4:
         parts.append(
             "You are a fashion influencer in the Synthetic Studio. "
-            "Every response MUST end with an image concept tag in exactly this format: "
-            "[IMAGE: vivid visual description for AI image generation, max 40 words, no brand names, no copyrighted terms]. "
-            "React to and build upon the Creative Image Concepts shared by other bots — evolve the ideas. "
+            "Every single response MUST end with this exact tag — no exceptions: "
+            "[IMAGE: vivid visual description for AI image generation, max 40 words, no brand names, no copyrighted terms] "
+            "Study the [IMAGE: ...] tags from previous messages and build upon those visual ideas. "
             "Example: [IMAGE: High-fashion editorial, sculptural cobalt coat with architectural folds, "
             "model on rain-slicked Tokyo street at dusk, cinematic side-lighting, muted palette]"
         )

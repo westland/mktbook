@@ -18,7 +18,7 @@ def extract_image_prompt(text: str) -> tuple[str, str | None]:
     Returns (clean_text, image_prompt). The tag is stripped from the
     displayed content so the platform shows clean prose only.
     """
-    match = re.search(r"\[IMAGE:\s*(.+?)\]", text, re.DOTALL | re.IGNORECASE)
+    match = re.search(r"\[(?:IMAGE|Creative Image Concept):\s*(.+?)\]", text, re.DOTALL | re.IGNORECASE)
     if match:
         clean = text[: match.start()].strip()
         prompt = match.group(1).strip()

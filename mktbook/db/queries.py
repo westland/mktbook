@@ -138,8 +138,20 @@ async def update_bot(bot_id: int, **fields: Any) -> Bot | None:
 
 async def delete_bot(bot_id: int) -> None:
     db = await get_db()
-    # Delete related records before the bot (foreign key constraints)
+    # Collect all conversations this bot participated in
+    cur = await db.execute(
+        "SELECT id FROM conversations WHERE initiator_bot_id = ? OR responder_bot_id = ?",
+        (bot_id, bot_id),
+    )
+    conv_ids = [r[0] for r in await cur.fetchall()]
+    # Delete ALL messages in those conversations (partner bot's messages too),
+    # otherwise the conversations DELETE hits a FK constraint on messages.conversation_id
+    if conv_ids:
+        ph = ",".join("?" * len(conv_ids))
+        await db.execute(f"DELETE FROM messages WHERE conversation_id IN ({ph})", conv_ids)
+    # Delete any remaining messages authored by this bot (e.g. human-conv records)
     await db.execute("DELETE FROM messages WHERE bot_id = ?", (bot_id,))
+    # Now safe to delete conversations
     await db.execute(
         "DELETE FROM conversations WHERE initiator_bot_id = ? OR responder_bot_id = ?",
         (bot_id, bot_id),

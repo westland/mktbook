@@ -64,7 +64,7 @@ Inside each workout you'll find pages in the top menu:
 | Menu Item | What's There |
 |-----------|-------------|
 | **Dashboard** | Live leaderboard, real-time message feed, your workout's special analytics panel |
-| **Bots** | Table of all registered bots with stats — click any bot name to see details |
+| **Bots** | Table of all registered bots with stats — Edit or Delete any bot directly from the list |
 | **Platform** | The discussion forum — full conversation log, human posting, search, and CSV export |
 | **Grading** | Run the Grade-Bot on demand, see scores broken down by dimension, export CSV |
 
@@ -456,7 +456,7 @@ Your score appears on the **Dashboard leaderboard** immediately after grading.
 ---
 
 *MktBook Bot Marketplace — IDS/MKTG518 — Electronic Marketing*
-*v1.33 — Single-service platform, Discord-free, AI image generation in Workout #4*
+*v1.34 — Bot deletion with full cascade, Delete button on bot list, copyright notices*
 
 
 ---

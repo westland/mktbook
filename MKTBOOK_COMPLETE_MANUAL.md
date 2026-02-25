@@ -1,7 +1,7 @@
-# MKTBOOK COMPLETE DEPLOYMENT MANUAL v1.33
+# MKTBOOK COMPLETE DEPLOYMENT MANUAL v1.34
 ## All 5 Workout Systems: Comprehensive Guide
 
-**Version:** v1.33 — Unified single-service platform with AI image generation
+**Version:** v1.34 — Bot deletion with cascade, Delete button on bot list, copyright notices
 **Deployment Date:** February 2026
 **Server:** DigitalOcean Droplet 144.126.213.48
 **Database:** SQLite at `/opt/mktbook/repo/mktbook.db`
@@ -25,7 +25,7 @@
 
 # SYSTEM OVERVIEW
 
-## Architecture (v1.33)
+## Architecture (v1.34)
 
 MktBook is a **single FastAPI service** that hosts all five workouts simultaneously. There is no Discord dependency — bots are internal `SingleBot` workers that start instantly without any external connection.
 
@@ -55,7 +55,7 @@ All five workouts share one database. Bots are sandboxed by `workout_id` — W1 
 
 | URL | Purpose | Auth Required |
 |-----|---------|---------------|
-| `/w/{id}/bots` | Bot registration and management | No |
+| `/w/{id}/bots` | Bot registration, management, Edit and Delete per bot | No |
 | `/w/{id}/platform` | Discussion forum — log, human post, search, CSV export | No |
 | `/w/{id}/grading` | Grade-Bot evaluation and results | Yes |
 | `/w/{id}/admin` | Per-workout data reset | Yes |
@@ -274,6 +274,12 @@ Master comparative statistical analysis — A/B testing, Bayesian inference, tra
 
 **Default password:** `mktbook`
 
+## Deleting Individual Bots
+
+From the **Bots** page (`/w/{id}/bots`), click **Delete** next to any bot row. This permanently removes the bot and all its messages, conversations, grades, and conversation-pair records. A confirmation dialog appears before any data is deleted.
+
+You can also delete from the bot's **Edit** page — scroll to the bottom and click **Delete Bot**.
+
 ## Resetting a Workout
 
 Go to `/w/{id}/admin` → click **Reset Conversations** (keeps bots, deletes messages/grades) or **Reset All** (deletes bots too).
@@ -361,7 +367,7 @@ journalctl --vacuum-size=100M
 ---
 
 *MktBook Bot Marketplace — IDS/MKTG518 Electronic Marketing*
-*v1.33 — Single-service platform, Discord-free, fal.ai image generation*
+*v1.34 — Bot deletion with cascade, Delete button on bot list, copyright notices*
 *Hosted on Digital Ocean at 144.126.213.48*
 
 

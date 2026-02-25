@@ -212,3 +212,8 @@ python3 -m mktbook_2.main
 - Grading uses simple keyword-based sentiment analysis; for production, integrate real sentiment API
 - Personality detection is heuristic-based; can be improved with ML
 - SQLite concurrent access should be fine for <50 bots; scale to PostgreSQL if needed
+
+
+---
+
+© 2026 J. Christopher Westland. All rights reserved.

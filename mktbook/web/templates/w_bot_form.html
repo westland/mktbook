@@ -81,7 +81,7 @@
 {% if bot %}
 <hr>
 <button type="button" class="secondary outline"
-    onclick="if(confirm('Delete this bot? This cannot be undone.')) fetch('/api/bots/{{ bot.id }}', {method:'DELETE'}).then(()=>location.href='/w/{{ workout.id }}/bots')">
+    onclick="if(confirm('Delete this bot and all its messages? This cannot be undone.')) fetch('/api/bots/{{ bot.id }}', {method:'DELETE'}).then(r => { if(r.ok) location.href='/w/{{ workout.id }}/bots'; else r.text().then(t => alert('Delete failed: ' + t)); })">
     Delete Bot
 </button>
 {% endif %}

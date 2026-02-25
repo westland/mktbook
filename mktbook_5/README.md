@@ -786,3 +786,8 @@ You don't need to understand math. Here's what happens:
 **Version:** 0.1.0  
 **Status:** Production-ready  
 **Integration:** Compatible with mktbook, mktbook_2, mktbook_3, mktbook_4
+
+
+---
+
+© 2026 J. Christopher Westland. All rights reserved.

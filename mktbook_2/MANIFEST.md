@@ -339,3 +339,8 @@ Everything needed to run **Workout #2: The Social 3.0 Business Model** is comple
 **Start with:** [LAUNCH_CHECKLIST.md](./LAUNCH_CHECKLIST.md)
 
 Good luck with your class! 🚀
+
+
+---
+
+© 2026 J. Christopher Westland. All rights reserved.

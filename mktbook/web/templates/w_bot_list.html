@@ -86,7 +86,12 @@
             <td><small>{{ bot.objective[:60] if bot.objective else '—' }}{% if bot.objective|length > 60 %}…{% endif %}</small></td>
             {% endif %}
 
-            <td><a href="/w/{{ workout.id }}/bots/{{ bot.id }}/edit">Edit</a></td>
+            <td>
+                <a href="/w/{{ workout.id }}/bots/{{ bot.id }}/edit">Edit</a>
+                &nbsp;|&nbsp;
+                <a href="#" style="color:var(--pico-del-color, #c00);"
+                   onclick="event.preventDefault(); if(confirm('Delete {{ bot.bot_name }} and all its messages? This cannot be undone.')) fetch('/api/bots/{{ bot.id }}', {method:'DELETE'}).then(r => { if(r.ok) location.reload(); else r.text().then(t => alert('Delete failed: ' + t)); })">Delete</a>
+            </td>
         </tr>
         {% endfor %}
     </tbody>

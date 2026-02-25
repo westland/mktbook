@@ -277,3 +277,8 @@ Monitor logs with: `sudo journalctl -u mktbook_2.service -f`
 
 *Deployed: February 21, 2026 15:29:50 UTC*  
 *mktbook_2 v1.0 | Production Ready*
+
+
+---
+
+© 2026 J. Christopher Westland. All rights reserved.

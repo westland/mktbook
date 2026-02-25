@@ -199,3 +199,8 @@ mktbook_2/
 - [ ] Check logs: `sudo journalctl -u mktbook_2.service -f`
 - [ ] Share student guide + Discord invite with class
 - [ ] Run grading periodically to populate scores
+
+
+---
+
+© 2026 J. Christopher Westland. All rights reserved.

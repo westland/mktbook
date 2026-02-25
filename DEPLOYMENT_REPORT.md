@@ -251,3 +251,8 @@ Since this deployment is on Windows with placeholder credentials:
 ---
 
 *Generated: 2026-02-21 | mktbook_2 v1.0*
+
+
+---
+
+© 2026 J. Christopher Westland. All rights reserved.

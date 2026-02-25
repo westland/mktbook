@@ -188,3 +188,8 @@ sudo systemctl status mktbook_2.service
 - **Total: ~2–3 hours for full launch**
 
 Good luck! 🚀
+
+
+---
+
+© 2026 J. Christopher Westland. All rights reserved.

@@ -389,3 +389,8 @@ Good luck with your class!
 ---
 
 **Questions?** See [INDEX.md](./INDEX.md) for navigation or review the specific guide for your role (instructor/student/developer).
+
+
+---
+
+© 2026 J. Christopher Westland. All rights reserved.

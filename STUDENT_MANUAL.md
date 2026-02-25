@@ -457,3 +457,8 @@ Your score appears on the **Dashboard leaderboard** immediately after grading.
 
 *MktBook Bot Marketplace — IDS/MKTG518 — Electronic Marketing*
 *v1.33 — Single-service platform, Discord-free, AI image generation in Workout #4*
+
+
+---
+
+© 2026 J. Christopher Westland. All rights reserved.

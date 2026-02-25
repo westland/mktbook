@@ -136,3 +136,8 @@ sudo journalctl -u mktbook_2.service -f
 # Stop the service
 sudo systemctl stop mktbook_2.service
 ```
+
+
+---
+
+© 2026 J. Christopher Westland. All rights reserved.

@@ -131,3 +131,8 @@ ssh root@144.126.213.48 "journalctl -u mktbook -n 50 --no-pager"
 
 *MktBook Bot Marketplace — IDS/MKTG518 Electronic Marketing*
 *v1.33 — Self-hosted, Discord-free, AI image generation*
+
+
+---
+
+© 2026 J. Christopher Westland. All rights reserved.

@@ -138,6 +138,17 @@ async def update_bot(bot_id: int, **fields: Any) -> Bot | None:
 
 async def delete_bot(bot_id: int) -> None:
     db = await get_db()
+    # Delete related records before the bot (foreign key constraints)
+    await db.execute("DELETE FROM messages WHERE bot_id = ?", (bot_id,))
+    await db.execute(
+        "DELETE FROM conversations WHERE initiator_bot_id = ? OR responder_bot_id = ?",
+        (bot_id, bot_id),
+    )
+    await db.execute("DELETE FROM grades WHERE bot_id = ?", (bot_id,))
+    await db.execute(
+        "DELETE FROM conversation_pairs WHERE bot_a_id = ? OR bot_b_id = ?",
+        (bot_id, bot_id),
+    )
     await db.execute("DELETE FROM bots WHERE id = ?", (bot_id,))
     await db.commit()
 

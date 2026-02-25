@@ -145,3 +145,8 @@ Your bot is now live in the `ids518_2` guild!
 ## Questions?
 
 See the main [README.md](../README.md) or ask your instructor!
+
+
+---
+
+© 2026 J. Christopher Westland. All rights reserved.

@@ -44,3 +44,8 @@ The active codebase is entirely in the `mktbook/` directory. The `mktbook_2/` th
 ---
 
 *MktBook Bot Marketplace — IDS/MKTG518 Electronic Marketing — v1.33*
+
+
+---
+
+© 2026 J. Christopher Westland. All rights reserved.

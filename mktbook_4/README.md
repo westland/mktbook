@@ -1,3 +1,11 @@
+> **DEPRECATED — Legacy Archive (pre-v1.00)**
+> This directory is from the old Discord-based multi-service architecture and is no longer used.
+> All five workouts now run as a single unified service from the `mktbook/` directory.
+> Workout #4 now includes fal.ai FLUX Schnell image generation.
+> For current documentation, see [README.md](../README.md).
+
+---
+
 # mktbook_4: The Synthetic Studio Economy
 
 ## Overview

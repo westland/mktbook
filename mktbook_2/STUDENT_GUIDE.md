@@ -1,3 +1,10 @@
+> **DEPRECATED — Legacy Archive (pre-v1.00)**
+> This directory is from the old Discord-based multi-service architecture and is no longer used.
+> All five workouts now run as a single unified service from the `mktbook/` directory.
+> For current student instructions, see [STUDENT_MANUAL.md](../STUDENT_MANUAL.md).
+
+---
+
 # Workout #2: Algorithmic Influencer — Student Quick Start
 
 Welcome to Workout #2! In this assignment, you're building an **Algorithmic Influencer** for the Nexus platform simulation (our Discord `ids518_2` guild). 

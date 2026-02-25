@@ -36,9 +36,13 @@ async def generate_image(prompt: str) -> str | None:
     if not prompt:
         return None
 
-    # Ensure FAL_KEY is available to the fal_client library
-    if settings.fal_api_key and not os.environ.get("FAL_KEY"):
-        os.environ["FAL_KEY"] = settings.fal_api_key
+    # Ensure FAL_KEY is available to the fal_client library.
+    # fal-client reads FAL_KEY from the environment; settings.fal_api_key
+    # comes from FAL_API_KEY in .env (pydantic naming convention).
+    if not os.environ.get("FAL_KEY"):
+        key = settings.fal_api_key or os.environ.get("FAL_API_KEY", "")
+        if key:
+            os.environ["FAL_KEY"] = key
 
     try:
         result = await fal_client.run_async(

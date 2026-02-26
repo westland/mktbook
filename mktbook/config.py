@@ -30,5 +30,9 @@ class Settings(BaseSettings):
     admin_password: str = "mktbook"
     secret_key: str = "mktbook-secret-change-me"
 
+    # LTI 1.3
+    lti_private_key_path: str = "/opt/mktbook/lti_private_key.pem"
+    lti_tool_base_url: str = "https://yourdomain.com"
+
 
 settings = Settings()  # type: ignore[call-arg]

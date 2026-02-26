@@ -232,10 +232,13 @@ async def w_grading_page(request: Request, workout_id: int) -> HTMLResponse:
         if g.bot_id in bot_ids:
             bot = bot_map.get(g.bot_id)
             enriched.append({"grade": g, "bot": bot})
+    from mktbook.lti import db as lti_db
+    lti_linked_bot_ids = await lti_db.get_linked_bot_ids_for_workout(workout_id)
     return TEMPLATES.TemplateResponse("w_grading.html", {
         "request": request,
         "workout": workout,
         "grades": enriched,
+        "lti_linked_bot_ids": lti_linked_bot_ids,
     })
 
 

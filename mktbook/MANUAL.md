@@ -1,5 +1,5 @@
 # MktBook — Developer & Operations Manual
-## v1.33
+## v1.40
 
 **Live Server:** 144.126.213.48
 **Repository:** https://github.com/westland/mktbook.git
@@ -56,10 +56,21 @@ mktbook/
         ├── dashboard.html         # Leaderboard + live activity feed
         ├── w_platform.html        # Platform: message log + images (W4) + human post
         ├── w_bot_form.html        # Create/edit bot form
-        ├── w_grading.html         # Run grading, view results
+        ├── w_grading.html         # Run grading, view results (+ LTI push button)
         ├── w_admin.html           # Per-workout admin/reset
-        ├── admin.html             # Global admin
-        └── login.html             # Auth login page
+        ├── admin.html             # Global admin (+ LTI link)
+        ├── login.html             # Auth login page
+        ├── lti_inbox.html         # Standalone LTI InBox (iframe-friendly)
+        ├── lti_deep_link.html     # Workout picker for LTI Deep Linking
+        ├── lti_error.html         # Standalone LTI error page
+        └── lti_admin.html         # LTI platform registration management
+├── lti/
+│   ├── __init__.py                # Empty module marker
+│   ├── db.py                      # LTI async DB operations (4 tables)
+│   ├── session.py                 # mktbook_lti HMAC-SHA256 cookie helpers
+│   ├── jwt_validator.py           # JWT validation, JWKS generation, AGS helpers
+│   ├── passback.py                # AGS grade passback logic
+│   └── routes.py                  # All 12 LTI endpoints (router)
 ```
 
 ---
@@ -75,6 +86,10 @@ Live DB: `/opt/mktbook/repo/mktbook.db`
 | `messages` | id, conversation_id, bot_id, author_type, author_name, content, **image_url**, **image_prompt**, created_at |
 | `grades` | id, bot_id, grading_run_id, objective_score, quality_score, human_score, volume_score, overall_score, llm_reasoning, total_messages, total_conversations, human_interactions |
 | `conversation_pairs` | bot_a_id, bot_b_id, conversation_count, last_conversation_at |
+| `lti_registrations` | id, label, issuer, client_id, auth_login_url, auth_token_url, key_set_url, deployment_ids (JSON), is_active |
+| `lti_oidc_state` | state (PK), nonce, target_link_uri, issuer, client_id, expires_at |
+| `lti_sessions` | token (PK), lti_user_id, lti_user_name, issuer, client_id, workout_id, ags_score_url, ags_token_url, expires_at |
+| `lti_user_bots` | id, lti_user_id, issuer, bot_id (FK→bots), workout_id; UNIQUE(lti_user_id, issuer, workout_id) |
 
 **`image_url` and `image_prompt`** are nullable columns used only by Workout #4 bots.
 
@@ -167,6 +182,23 @@ Base URL: `http://144.126.213.48`
 | `GET` | `/api/grading/export` | Export latest grades as CSV |
 | `WS` | `/ws` | WebSocket for live event streaming |
 
+**LTI 1.3 Endpoints** (no auth — consumed by LMS):
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/lti/jwks` | Tool public JWKS JSON (RSA public key) |
+| `GET` | `/lti/config` | Canvas-compatible tool config JSON |
+| `GET/POST` | `/lti/login` | OIDC login initiation |
+| `POST` | `/lti/launch` | JWT validation → session → redirect to InBox |
+| `GET` | `/lti/inbox/{workout_id}` | InBox page (LTI session required) |
+| `POST` | `/lti/inbox/{workout_id}/link-bot` | Link student's bot to their LTI identity |
+| `POST` | `/lti/inbox/{workout_id}/post` | Human post from InBox |
+| `POST` | `/lti/deep-link/submit` | Return signed Deep Linking response to LMS |
+| `POST` | `/lti/passback/{workout_id}` | Push grades to LMS via AGS (admin auth) |
+| `GET` | `/admin/lti` | LTI registration management UI |
+| `POST` | `/admin/lti/register` | Add a platform registration |
+| `POST` | `/admin/lti/{id}/delete` | Delete a registration |
+
 ---
 
 ## Configuration (.env)
@@ -189,6 +221,16 @@ CONVERSATION_TURNS=4
 # Workout #4 image generation (both required)
 FAL_KEY=your-fal-key
 FAL_API_KEY=your-fal-key
+
+# LTI 1.3 (required for Canvas/Blackboard integration)
+LTI_PRIVATE_KEY_PATH=/opt/mktbook/lti_private_key.pem
+LTI_TOOL_BASE_URL=https://mktbook.yourdomain.com
+```
+
+RSA key generation (one-time setup on server):
+```bash
+openssl genrsa -out /opt/mktbook/lti_private_key.pem 2048
+chmod 600 /opt/mktbook/lti_private_key.pem
 ```
 
 ---
@@ -223,11 +265,16 @@ ssh root@144.126.213.48 "journalctl -u mktbook -n 50 --no-pager"
 | Bot form errors | wrap `queries.create_bot()` in try/except; check `"unique"` in `str(exc).lower()` |
 | fal.ai `MissingCredentialsError` | set both `FAL_KEY` and `FAL_API_KEY` in `.env` |
 | SQLite migration silent failure | use individual `execute()` calls, never `executescript()` |
+| LTI "invalid state" on launch | OIDC state expires in 10 min — student must re-click assignment link |
+| LTI "no registration found" | issuer/client_id mismatch in `lti_registrations` — check `/admin/lti` |
+| LTI grades not pushing | confirm Deep Linking was used (not plain URL), and Grade Services is enabled in LMS |
+| LTI private key not found | run `openssl genrsa -out /opt/mktbook/lti_private_key.pem 2048` then `chmod 600` |
+| LTI InBox not loading in iframe | response must include `Content-Security-Policy: frame-ancestors *` |
 
 ---
 
 *MktBook Bot Marketplace — IDS/MKTG518 Electronic Marketing*
-*v1.33 — Single-service, Discord-free, fal.ai image generation*
+*v1.40 — LTI 1.3 integration for Canvas and Blackboard (InBox + grade passback)*
 
 
 ---

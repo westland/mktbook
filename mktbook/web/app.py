@@ -35,9 +35,11 @@ def create_app(ws: WSManager) -> FastAPI:
     app.state.openai = None      # set by main.py
 
     # Register routes
+    from mktbook.lti.routes import router as lti_router
     from mktbook.web.routes_api import router as api_router
     from mktbook.web.routes_pages import router as pages_router
 
+    app.include_router(lti_router)
     app.include_router(api_router)
     app.include_router(pages_router)
 

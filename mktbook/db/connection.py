@@ -82,6 +82,84 @@ async def get_db() -> aiosqlite.Connection:
         except Exception as exc:
             log.warning("bots unique-constraint migration skipped: %s", exc)
             await _db.execute("PRAGMA foreign_keys=ON")
+
+        # LTI 1.3 tables (v1.34+)
+        try:
+            await _db.execute("""
+                CREATE TABLE IF NOT EXISTS lti_registrations (
+                    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                    label          TEXT    NOT NULL,
+                    issuer         TEXT    NOT NULL,
+                    client_id      TEXT    NOT NULL,
+                    auth_login_url TEXT    NOT NULL,
+                    auth_token_url TEXT    NOT NULL,
+                    key_set_url    TEXT    NOT NULL,
+                    deployment_ids TEXT    NOT NULL DEFAULT '[]',
+                    is_active      INTEGER NOT NULL DEFAULT 1,
+                    created_at     TEXT    NOT NULL DEFAULT (datetime('now')),
+                    UNIQUE(issuer, client_id)
+                )
+            """)
+            await _db.commit()
+        except Exception as exc:
+            log.warning("lti_registrations migration skipped: %s", exc)
+
+        try:
+            await _db.execute("""
+                CREATE TABLE IF NOT EXISTS lti_oidc_state (
+                    state           TEXT PRIMARY KEY,
+                    nonce           TEXT NOT NULL,
+                    target_link_uri TEXT NOT NULL,
+                    issuer          TEXT NOT NULL,
+                    client_id       TEXT NOT NULL,
+                    expires_at      TEXT NOT NULL
+                )
+            """)
+            await _db.commit()
+        except Exception as exc:
+            log.warning("lti_oidc_state migration skipped: %s", exc)
+
+        try:
+            await _db.execute("""
+                CREATE TABLE IF NOT EXISTS lti_sessions (
+                    token            TEXT PRIMARY KEY,
+                    lti_user_id      TEXT NOT NULL,
+                    lti_user_name    TEXT NOT NULL DEFAULT '',
+                    lti_user_email   TEXT NOT NULL DEFAULT '',
+                    lti_roles        TEXT NOT NULL DEFAULT '[]',
+                    issuer           TEXT NOT NULL,
+                    client_id        TEXT NOT NULL,
+                    deployment_id    TEXT NOT NULL,
+                    context_id       TEXT NOT NULL DEFAULT '',
+                    resource_link_id TEXT NOT NULL DEFAULT '',
+                    workout_id       INTEGER NOT NULL DEFAULT 1,
+                    ags_lineitem_url TEXT,
+                    ags_score_url    TEXT,
+                    ags_token_url    TEXT,
+                    created_at       TEXT NOT NULL DEFAULT (datetime('now')),
+                    expires_at       TEXT NOT NULL
+                )
+            """)
+            await _db.commit()
+        except Exception as exc:
+            log.warning("lti_sessions migration skipped: %s", exc)
+
+        try:
+            await _db.execute("""
+                CREATE TABLE IF NOT EXISTS lti_user_bots (
+                    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                    lti_user_id TEXT    NOT NULL,
+                    issuer      TEXT    NOT NULL,
+                    bot_id      INTEGER NOT NULL REFERENCES bots(id),
+                    workout_id  INTEGER NOT NULL,
+                    linked_at   TEXT    NOT NULL DEFAULT (datetime('now')),
+                    UNIQUE(lti_user_id, issuer, workout_id)
+                )
+            """)
+            await _db.commit()
+        except Exception as exc:
+            log.warning("lti_user_bots migration skipped: %s", exc)
+
     return _db
 
 

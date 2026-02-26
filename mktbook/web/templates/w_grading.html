@@ -27,10 +27,16 @@
         Grade all bots and run <strong>Bayesian A/B inference</strong> across Ecosystem A vs Ecosystem B. The winning ecosystem is determined by statistical dominance.
         {% endif %}
     </p>
-    <button id="run-grading-btn" onclick="runGrading()" style="background:{{ workout.color }}; border-color:{{ workout.color }};">
-        Run Grading Now
-    </button>
-    <div id="grading-status"></div>
+    <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+        <button id="run-grading-btn" onclick="runGrading()" style="background:{{ workout.color }}; border-color:{{ workout.color }};">
+            Run Grading Now
+        </button>
+        <button id="push-lti-btn" onclick="pushLtiGrades()" class="outline"
+                title="Push grades to Canvas / Blackboard via LTI AGS">
+            &#x1F4E4; Push Grades to LMS
+        </button>
+    </div>
+    <div id="grading-status" style="margin-top:0.5rem;"></div>
 </article>
 
 {% if grades %}
@@ -72,6 +78,7 @@
                 <th>Volume (15%)</th>
                 <th>Ecosystem</th>
                 {% endif %}
+                <th>LTI</th>
                 <th>Reasoning</th>
             </tr>
         </thead>
@@ -95,6 +102,13 @@
                     {% endif %}
                 </td>
                 {% endif %}
+                <td>
+                    {% if lti_linked_bot_ids is defined and item.grade.bot_id in lti_linked_bot_ids %}
+                    <mark style="background:#10b981; color:#fff; font-size:0.75em; padding:1px 5px;">Linked</mark>
+                    {% else %}
+                    <mark class="outline" style="color:#bbb; font-size:0.75em; padding:1px 5px; border:1px solid #ddd;">—</mark>
+                    {% endif %}
+                </td>
                 <td><details><summary>View</summary>{{ item.grade.llm_reasoning }}</details></td>
             </tr>
             {% endfor %}
@@ -167,6 +181,28 @@ async function runGrading() {
         }
     } catch (e) {
         status.textContent = 'Error: ' + e.message;
+    }
+    btn.disabled = false;
+    btn.removeAttribute('aria-busy');
+}
+
+async function pushLtiGrades() {
+    const btn = document.getElementById('push-lti-btn');
+    const status = document.getElementById('grading-status');
+    btn.disabled = true;
+    btn.setAttribute('aria-busy', 'true');
+    status.textContent = 'Pushing grades to LMS…';
+    try {
+        const resp = await fetch('/lti/passback/{{ workout.id }}', { method: 'POST' });
+        const data = await resp.json();
+        if (data.error) {
+            status.textContent = 'LTI error: ' + data.error;
+        } else {
+            const errs = data.errors && data.errors.length ? ` | ${data.errors.length} error(s)` : '';
+            status.textContent = `LMS push done: ${data.pushed} pushed, ${data.skipped_unlinked} unlinked, ${data.skipped_no_session} no session${errs}.`;
+        }
+    } catch (e) {
+        status.textContent = 'LTI push error: ' + e.message;
     }
     btn.disabled = false;
     btn.removeAttribute('aria-busy');

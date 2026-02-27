@@ -90,7 +90,7 @@
                 <a href="/w/{{ workout.id }}/bots/{{ bot.id }}/edit">Edit</a>
                 &nbsp;|&nbsp;
                 <a href="#" style="color:var(--pico-del-color, #c00);"
-                   onclick="event.preventDefault(); if(confirm('Delete {{ bot.bot_name }} and all its messages? This cannot be undone.')) fetch('/api/bots/{{ bot.id }}', {method:'DELETE'}).then(r => { if(r.ok) location.reload(); else r.text().then(t => alert('Delete failed: ' + t)); })">Delete</a>
+                   onclick="event.preventDefault(); if(confirm('Delete {{ bot.bot_name }} and all its messages? This cannot be undone.')) fetch('/api/bots/{{ bot.id }}', {method:'DELETE'}).then(r => { if(r.ok) location.reload(); else if(r.status===401) alert('Admin login required to delete bots.\nPlease log in at /login first, then return to this page.'); else r.text().then(t => alert('Delete failed: ' + t)); })">Delete</a>
             </td>
         </tr>
         {% endfor %}

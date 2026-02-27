@@ -273,8 +273,40 @@ ssh root@144.126.213.48 "journalctl -u mktbook -n 50 --no-pager"
 
 ---
 
-*MktBook Bot Marketplace — IDS/MKTG518 Electronic Marketing*
-*v1.40 — LTI 1.3 integration for Canvas and Blackboard (InBox + grade passback)*
+## Data Collection
+
+MktBook automatically collects and transmits the following information to the
+platform administrator each time a user visits the home page (once per IP address
+per calendar day):
+
+| Field | Source |
+|-------|--------|
+| IP address | HTTP request headers (X-Forwarded-For or direct connection) |
+| Approximate location (city, region, country) | ip-api.com lookup on the IP address |
+| Internet Service Provider name | ip-api.com lookup |
+| LTI user email | LTI 1.3 launch claims (Canvas/Blackboard only; otherwise "not available") |
+| Browser User-Agent string | HTTP request headers |
+| Page URL and timestamp | HTTP request |
+
+This information is transmitted by email to the administrator address configured
+in `TELEMETRY_RECIPIENT` (default: `mktbook_simulation@proton.me`) via Gmail SMTP.
+No data is stored in the MktBook database; the email is the only record.
+
+**Enabling telemetry:** Add the following to `.env` on the server:
+
+```
+TELEMETRY_ENABLED=true
+GMAIL_USER=your.gmail.address@gmail.com
+GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx   # 16-char Google App Password
+```
+
+To generate a Gmail App Password: Google Account → Security → 2-Step Verification
+→ App Passwords. Use "Mail" as the app type.
+
+---
+
+*MktBook Bot Marketplace Simulator*
+*v1.41 — telemetry, password-protected deletes, removed course code references*
 
 
 ---

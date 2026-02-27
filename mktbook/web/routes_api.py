@@ -7,10 +7,11 @@ import uuid
 from typing import Any
 
 from fastapi import APIRouter, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
 from mktbook.db import queries
+from mktbook.web.auth import is_authenticated
 
 router = APIRouter(prefix="/api")
 
@@ -114,8 +115,13 @@ async def update_bot(bot_id: int, body: BotUpdate, request: Request) -> dict[str
     return _bot_to_dict(bot)
 
 
-@router.delete("/bots/{bot_id}")
-async def delete_bot(bot_id: int, request: Request) -> dict[str, str]:
+@router.delete("/bots/{bot_id}", response_model=None)
+async def delete_bot(bot_id: int, request: Request) -> JSONResponse | dict[str, str]:
+    if not is_authenticated(request):
+        return JSONResponse(
+            {"error": "Admin authentication required"},
+            status_code=401,
+        )
     fleet = request.app.state.fleet
     if fleet:
         await fleet.stop_bot(bot_id)

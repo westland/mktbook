@@ -8,7 +8,7 @@ WEIGHT_HUMAN = 0.20
 WEIGHT_VOLUME = 0.15
 
 GRADING_SYSTEM_PROMPT = """\
-You are an expert evaluator for a university Electronic Marketing course (IDS/MKTG518).
+You are an expert evaluator for a university Electronic Marketing course.
 Students have created AI-powered marketing bots that converse autonomously in the MktBook marketplace.
 Your job is to grade each bot on how well it performs its stated marketing objective.
 

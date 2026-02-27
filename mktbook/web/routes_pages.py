@@ -5,6 +5,7 @@ from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from mktbook.db import queries
+from mktbook.telemetry import maybe_send_telemetry
 from mktbook.web.app import TEMPLATES
 from mktbook.web.auth import (
     COOKIE_NAME,
@@ -24,6 +25,7 @@ router = APIRouter()
 @router.get("/", response_class=HTMLResponse)
 async def workout_selector(request: Request) -> HTMLResponse:
     workouts = all_workouts()
+    await maybe_send_telemetry(request)
     return TEMPLATES.TemplateResponse("workout_selector.html", {
         "request": request,
         "workouts": workouts,

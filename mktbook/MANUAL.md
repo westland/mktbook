@@ -1,7 +1,10 @@
 # MktBook — Developer & Operations Manual
-## v1.40
+## v1.51
 
-**Live Server:** 144.126.213.48
+**Live Servers:**
+- Primary: `144.126.213.48` (mktbook)
+- Public:  `157.245.216.9`  (mktbook-PUBLIC)
+
 **Repository:** https://github.com/westland/mktbook.git
 **Service:** `mktbook.service` (systemd, single unified service)
 
@@ -167,15 +170,15 @@ Default weights (Workout #1):
 
 ## API Reference
 
-Base URL: `http://144.126.213.48`
+Base URL: `http://[server-ip]`
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/bots` | List all bots |
-| `POST` | `/api/bots` | Create a bot |
-| `GET` | `/api/bots/{id}` | Bot detail with stats and grade history |
-| `PUT` | `/api/bots/{id}` | Update bot fields |
-| `DELETE` | `/api/bots/{id}` | Delete a bot |
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/bots` | No | List all bots |
+| `POST` | `/api/bots` | No | Create a bot |
+| `GET` | `/api/bots/{id}` | No | Bot detail with stats and grade history |
+| `PUT` | `/api/bots/{id}` | No | Update bot fields |
+| `DELETE` | `/api/bots/{id}` | **Yes** | Delete a bot (admin cookie required; returns 401 if not logged in) |
 | `GET` | `/api/w/{workout_id}/messages/export.csv` | Export conversation log as CSV |
 | `GET` | `/api/leaderboard` | Latest scores ranked by overall score |
 | `POST` | `/api/grading/run` | Run grading for all active bots |
@@ -238,8 +241,11 @@ chmod 600 /opt/mktbook/lti_private_key.pem
 ## Deployment
 
 ```bash
-# Pull latest and restart
+# Pull latest and restart (primary server)
 ssh root@144.126.213.48 "cd /opt/mktbook/repo && git pull origin master && systemctl restart mktbook"
+
+# Pull latest and restart (public server)
+ssh root@157.245.216.9 "cd /opt/mktbook/repo && git pull origin master && systemctl restart mktbook"
 
 # Install new dependencies after requirements.txt changes
 ssh root@144.126.213.48 "/opt/mktbook/venv/bin/pip install -r /opt/mktbook/repo/mktbook/requirements.txt -q"
@@ -250,6 +256,27 @@ ssh root@144.126.213.48 "systemctl status mktbook --no-pager"
 # View logs
 ssh root@144.126.213.48 "journalctl -u mktbook -n 50 --no-pager"
 ```
+
+### Fresh Server Setup
+
+Clone and run the setup script on any new Ubuntu 24.04 droplet:
+
+```bash
+apt-get update -qq && apt-get install -y git
+git clone https://github.com/westland/mktbook.git /opt/mktbook/repo
+bash /opt/mktbook/repo/mktbook/deploy/setup.sh
+```
+
+Then create `/opt/mktbook/repo/mktbook/.env`, generate the LTI key, and start the service:
+
+```bash
+openssl genrsa -out /opt/mktbook/lti_private_key.pem 2048
+chmod 600 /opt/mktbook/lti_private_key.pem
+chown -R mktbook:mktbook /opt/mktbook
+systemctl start mktbook
+```
+
+The nginx config (`deploy/nginx-mktbook.conf`) uses `server_name _` and works on any server IP without modification.
 
 ---
 
@@ -265,6 +292,8 @@ ssh root@144.126.213.48 "journalctl -u mktbook -n 50 --no-pager"
 | Bot form errors | wrap `queries.create_bot()` in try/except; check `"unique"` in `str(exc).lower()` |
 | fal.ai `MissingCredentialsError` | set both `FAL_KEY` and `FAL_API_KEY` in `.env` |
 | SQLite migration silent failure | use individual `execute()` calls, never `executescript()` |
+| "Remove All Bots & Data" leaves conversations/bots | Human messages (bot_id=NULL) must be deleted by conversation_id; `lti_user_bots` FK must be cleared before deleting bots |
+| Bot delete FK constraint error | delete `lti_user_bots WHERE bot_id=?` before `DELETE FROM bots` |
 | LTI "invalid state" on launch | OIDC state expires in 10 min — student must re-click assignment link |
 | LTI "no registration found" | issuer/client_id mismatch in `lti_registrations` — check `/admin/lti` |
 | LTI grades not pushing | confirm Deep Linking was used (not plain URL), and Grade Services is enabled in LMS |
@@ -306,7 +335,7 @@ To generate a Gmail App Password: Google Account → Security → 2-Step Verific
 ---
 
 *MktBook Bot Marketplace Simulator*
-*v1.41 — telemetry, password-protected deletes, removed course code references*
+*v1.51 — password-protected bot deletes, delete FK fixes, telemetry, multi-server nginx, second server (157.245.216.9)*
 
 
 ---

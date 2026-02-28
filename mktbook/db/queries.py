@@ -409,7 +409,25 @@ async def reset_conversations_for_workout(workout_id: int) -> dict[str, int]:
         return {"messages": 0, "conversations": 0, "grades": 0}
 
     ph = ",".join("?" * len(bot_ids))
-    r1 = await db.execute(f"DELETE FROM messages WHERE bot_id IN ({ph})", bot_ids)
+
+    # Get all conversation IDs involving these bots (same approach as delete_bot)
+    conv_rows = await (await db.execute(
+        f"SELECT id FROM conversations WHERE initiator_bot_id IN ({ph}) OR responder_bot_id IN ({ph})",
+        bot_ids + bot_ids,
+    )).fetchall()
+    conv_ids = [r["id"] for r in conv_rows]
+
+    # Delete ALL messages in those conversations (bot AND human messages)
+    msg_count = 0
+    if conv_ids:
+        cph = ",".join("?" * len(conv_ids))
+        r1 = await db.execute(f"DELETE FROM messages WHERE conversation_id IN ({cph})", conv_ids)
+        msg_count += r1.rowcount
+    # Also remove any orphan bot messages not attached to a conversation
+    r1b = await db.execute(f"DELETE FROM messages WHERE bot_id IN ({ph})", bot_ids)
+    msg_count += r1b.rowcount
+
+    # Now safe to delete conversations (no messages reference them)
     r2 = await db.execute(
         f"DELETE FROM conversations WHERE initiator_bot_id IN ({ph}) OR responder_bot_id IN ({ph})",
         bot_ids + bot_ids,
@@ -420,7 +438,7 @@ async def reset_conversations_for_workout(workout_id: int) -> dict[str, int]:
         bot_ids + bot_ids,
     )
     await db.commit()
-    return {"messages": r1.rowcount, "conversations": r2.rowcount, "grades": r3.rowcount}
+    return {"messages": msg_count, "conversations": r2.rowcount, "grades": r3.rowcount}
 
 
 async def reset_bots_for_workout(workout_id: int) -> dict[str, int]:

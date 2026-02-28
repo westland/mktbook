@@ -93,6 +93,7 @@ async def w_bot_list(request: Request, workout_id: int) -> HTMLResponse:
         "workout": workout,
         "bots": bots,
         "stats": stats,
+        "authenticated": is_authenticated(request),
     })
 
 

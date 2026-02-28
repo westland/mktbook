@@ -161,6 +161,8 @@ async def delete_bot(bot_id: int) -> None:
         "DELETE FROM conversation_pairs WHERE bot_a_id = ? OR bot_b_id = ?",
         (bot_id, bot_id),
     )
+    # lti_user_bots.bot_id has FK → bots.id, must delete before the bot row
+    await db.execute("DELETE FROM lti_user_bots WHERE bot_id = ?", (bot_id,))
     await db.execute("DELETE FROM bots WHERE id = ?", (bot_id,))
     await db.commit()
 
@@ -445,6 +447,14 @@ async def reset_bots_for_workout(workout_id: int) -> dict[str, int]:
     """Delete all bots AND their conversations/messages/grades for a workout."""
     counts = await reset_conversations_for_workout(workout_id)
     db = await get_db()
+    # lti_user_bots.bot_id has FK → bots.id; must delete before bots
+    bot_rows = await (await db.execute(
+        "SELECT id FROM bots WHERE workout_id = ?", (workout_id,)
+    )).fetchall()
+    bot_ids = [r["id"] for r in bot_rows]
+    if bot_ids:
+        ph = ",".join("?" * len(bot_ids))
+        await db.execute(f"DELETE FROM lti_user_bots WHERE bot_id IN ({ph})", bot_ids)
     r = await db.execute("DELETE FROM bots WHERE workout_id = ?", (workout_id,))
     counts["bots"] = r.rowcount
     await db.commit()
@@ -466,6 +476,7 @@ async def reset_all() -> dict[str, int]:
     """Nuclear option — delete everything: all bots and all conversation data."""
     counts = await reset_all_conversations()
     db = await get_db()
+    await db.execute("DELETE FROM lti_user_bots")
     r = await db.execute("DELETE FROM bots")
     counts["bots"] = r.rowcount
     await db.commit()

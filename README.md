@@ -1,7 +1,7 @@
 # MktBook Bot Marketplace
 
 **IDS/MKTG518 — Electronic Marketing Bot Simulator**
-**Version:** v1.40 | **Live Server:** http://144.126.213.48
+**Version:** v1.52 | **Live Server:** http://144.126.213.48
 
 ---
 

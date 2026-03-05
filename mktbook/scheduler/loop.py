@@ -7,7 +7,7 @@ import random
 from typing import TYPE_CHECKING
 
 from mktbook.bots.conversation import build_conversation_messages
-from mktbook.bots.image_gen import extract_image_prompt, generate_image
+from mktbook.bots.image_gen import extract_image_prompt, generate_image, w4_image_gate
 from mktbook.config import settings
 from mktbook.db import queries
 from mktbook.scheduler.pairing import select_pair
@@ -100,6 +100,9 @@ class ConversationScheduler:
         is_studio = initiator.bot_row.workout_id == 4
         tokens = 350 if is_studio else 256
 
+        # One image budget per conversation; gate fires ~1 in 7 conversations.
+        image_budget = 1 if (is_studio and w4_image_gate.should_trigger()) else 0
+
         for turn in range(turns):
             # Initiator speaks
             llm_msgs = build_conversation_messages(
@@ -112,8 +115,13 @@ class ConversationScheduler:
             await initiator.send_to_marketplace(init_raw)
 
             if is_studio:
-                init_text, init_image_prompt = extract_image_prompt(init_raw)
-                init_image_url = await generate_image(init_image_prompt) if init_image_prompt else None
+                init_text, _init_prompt = extract_image_prompt(init_raw)
+                if image_budget > 0 and _init_prompt:
+                    init_image_prompt = _init_prompt
+                    init_image_url = await generate_image(init_image_prompt)
+                    image_budget -= 1
+                else:
+                    init_image_prompt, init_image_url = None, None
             else:
                 init_text, init_image_prompt, init_image_url = init_raw, None, None
 
@@ -149,8 +157,13 @@ class ConversationScheduler:
             await responder.send_to_marketplace(resp_raw)
 
             if is_studio:
-                resp_text, resp_image_prompt = extract_image_prompt(resp_raw)
-                resp_image_url = await generate_image(resp_image_prompt) if resp_image_prompt else None
+                resp_text, _resp_prompt = extract_image_prompt(resp_raw)
+                if image_budget > 0 and _resp_prompt:
+                    resp_image_prompt = _resp_prompt
+                    resp_image_url = await generate_image(resp_image_prompt)
+                    image_budget -= 1
+                else:
+                    resp_image_prompt, resp_image_url = None, None
             else:
                 resp_text, resp_image_prompt, resp_image_url = resp_raw, None, None
 

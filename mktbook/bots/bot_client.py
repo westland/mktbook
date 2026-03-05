@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from openai import AsyncOpenAI
 
 from mktbook.bots.conversation import build_reply_messages
-from mktbook.bots.image_gen import extract_image_prompt, generate_image
+from mktbook.bots.image_gen import extract_image_prompt, generate_image, w4_image_gate
 from mktbook.config import settings
 from mktbook.db import queries
 from mktbook.db.models import Bot
@@ -88,10 +88,14 @@ class SingleBot:
             log.exception("OpenAI error for bot %s responding to human", self.bot_row.bot_name)
             return None
 
-        # For workout #4: extract [IMAGE: ...] tag and generate image via fal.ai
+        # For workout #4: extract [IMAGE: ...] tag; generate image only when gate fires.
         if is_studio:
-            reply_text, image_prompt = extract_image_prompt(raw_text)
-            image_url = await generate_image(image_prompt) if image_prompt else None
+            reply_text, _prompt = extract_image_prompt(raw_text)
+            if _prompt and w4_image_gate.should_trigger():
+                image_prompt = _prompt
+                image_url = await generate_image(image_prompt)
+            else:
+                image_prompt, image_url = None, None
         else:
             reply_text, image_prompt, image_url = raw_text, None, None
 

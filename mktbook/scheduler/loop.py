@@ -100,9 +100,6 @@ class ConversationScheduler:
         is_studio = initiator.bot_row.workout_id == 4
         tokens = 350 if is_studio else 256
 
-        # One image budget per conversation; gate fires ~1 in 7 conversations.
-        image_budget = 1 if (is_studio and w4_image_gate.should_trigger()) else 0
-
         for turn in range(turns):
             # Initiator speaks
             llm_msgs = build_conversation_messages(
@@ -116,10 +113,9 @@ class ConversationScheduler:
 
             if is_studio:
                 init_text, _init_prompt = extract_image_prompt(init_raw)
-                if image_budget > 0 and _init_prompt:
+                if _init_prompt and w4_image_gate.should_trigger():
                     init_image_prompt = _init_prompt
                     init_image_url = await generate_image(init_image_prompt)
-                    image_budget -= 1
                 else:
                     init_image_prompt, init_image_url = None, None
             else:
@@ -158,10 +154,9 @@ class ConversationScheduler:
 
             if is_studio:
                 resp_text, _resp_prompt = extract_image_prompt(resp_raw)
-                if image_budget > 0 and _resp_prompt:
+                if _resp_prompt and w4_image_gate.should_trigger():
                     resp_image_prompt = _resp_prompt
                     resp_image_url = await generate_image(resp_image_prompt)
-                    image_budget -= 1
                 else:
                     resp_image_prompt, resp_image_url = None, None
             else:

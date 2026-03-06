@@ -45,6 +45,10 @@ async def generate_image(prompt: str) -> str | None:
         key = settings.fal_api_key or os.environ.get("FAL_API_KEY", "")
         if key:
             os.environ["FAL_KEY"] = key
+        else:
+            log.warning("fal.ai: FAL_KEY and FAL_API_KEY are both unset — image generation disabled. "
+                        "Set FAL_API_KEY in mktbook/.env to enable images.")
+            return None
 
     try:
         result = await fal_client.run_async(

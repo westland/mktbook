@@ -1,6 +1,8 @@
 """HTML page routes."""
 from __future__ import annotations
 
+import datetime
+
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
@@ -311,13 +313,43 @@ async def w_admin_page(
     if not workout:
         return HTMLResponse("<h1>Workout not found</h1>", status_code=404)
     stats = await queries.get_workout_stats(workout_id)
+
+    auto_grader = getattr(request.app.state, "auto_grader", None)
+    auto_grade_hours = auto_grader.get_interval(workout_id) if auto_grader else None
+    next_run_at = auto_grader.get_next_run_at(workout_id) if auto_grader else None
+    if next_run_at:
+        mins_until = max(0, int((next_run_at - datetime.datetime.now()).total_seconds() / 60))
+    else:
+        mins_until = None
+
     return TEMPLATES.TemplateResponse("w_admin.html", {
         "request": request,
         "workout": workout,
         "stats": stats,
         "done": done,
         "active_page": "admin",
+        "auto_grade_hours": auto_grade_hours,
+        "auto_grade_mins_until": mins_until,
     })
+
+
+@router.post("/w/{workout_id}/admin/auto-grade", response_model=None)
+async def w_admin_set_auto_grade(
+    request: Request,
+    workout_id: int,
+    interval_hours: int = Form(0),
+) -> RedirectResponse:
+    """Enable or disable automatic regrading for a workout."""
+    if not is_authenticated(request):
+        return redirect_to_login(f"/w/{workout_id}/admin")
+    auto_grader = getattr(request.app.state, "auto_grader", None)
+    if auto_grader:
+        if interval_hours == 0:
+            await auto_grader.clear(workout_id)
+        else:
+            interval_hours = max(1, min(12, interval_hours))
+            await auto_grader.set(workout_id, interval_hours)
+    return RedirectResponse(url=f"/w/{workout_id}/admin", status_code=303)
 
 
 @router.post("/w/{workout_id}/admin/reset/conversations")

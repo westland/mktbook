@@ -25,8 +25,8 @@ class GradeEvaluator:
     def __init__(self, openai_client: AsyncOpenAI) -> None:
         self.openai = openai_client
 
-    async def grade_all(self, run_id: str) -> list[Grade]:
-        bots = await queries.get_active_bots()
+    async def grade_all(self, run_id: str, workout_id: int | None = None) -> list[Grade]:
+        bots = await queries.get_active_bots(workout_id=workout_id)
         results: list[Grade] = []
 
         for bot in bots:

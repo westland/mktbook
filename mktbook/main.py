@@ -18,6 +18,7 @@ from openai import AsyncOpenAI
 from mktbook.bots.fleet import BotFleet
 from mktbook.config import settings
 from mktbook.db.connection import close_db, get_db
+from mktbook.grading.auto_grader import AutoGrader
 from mktbook.scheduler.loop import ConversationScheduler
 from mktbook.web.app import create_app
 from mktbook.web.websocket import WSManager
@@ -41,9 +42,11 @@ async def main() -> None:
     # Create subsystems
     fleet = BotFleet(openai_client, ws)
     scheduler = ConversationScheduler(fleet, ws)
+    auto_grader = AutoGrader(openai_client, ws)
     app = create_app(ws)
     app.state.fleet = fleet
     app.state.scheduler = scheduler
+    app.state.auto_grader = auto_grader
     app.state.openai = openai_client
 
     # Uvicorn server config
@@ -76,7 +79,9 @@ async def main() -> None:
     async def run_fleet() -> None:
         await fleet.start_all()
         log.info("Bot fleet started (%d bots)", len(fleet.active_bots))
+        await auto_grader.load_from_db()
         await shutdown_event.wait()
+        await auto_grader.stop_all()
         await fleet.stop_all()
         log.info("Bot fleet stopped")
 

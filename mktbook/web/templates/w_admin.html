@@ -87,4 +87,42 @@
     </form>
 </article>
 
+{# ── Auto-Grading Schedule ──────────────────────────────────────────── #}
+<article>
+    <header><strong>Auto-Grading Schedule</strong></header>
+    {% if auto_grade_hours %}
+    <p>
+        Auto-grading is <strong>enabled</strong> — the Grade-Bot runs every
+        <strong>{{ auto_grade_hours }} hour{{ 's' if auto_grade_hours != 1 else '' }}</strong>
+        for Workout #{{ workout.id }}.
+        {% if auto_grade_mins_until is not none %}
+        Next run in approximately <strong>{{ auto_grade_mins_until }} min</strong>.
+        {% endif %}
+    </p>
+    <form method="post" action="/w/{{ workout.id }}/admin/auto-grade">
+        <input type="hidden" name="interval_hours" value="0">
+        <button type="submit" class="outline secondary" style="font-size:0.9em;">
+            Disable Auto-Grading
+        </button>
+    </form>
+    {% else %}
+    <p>Run the Grade-Bot automatically on a fixed schedule. Results appear on the Grading page
+       and are broadcast to all connected clients.</p>
+    <form method="post" action="/w/{{ workout.id }}/admin/auto-grade"
+          style="display:flex; gap:0.6rem; align-items:flex-end; flex-wrap:wrap;">
+        <label style="margin:0; font-weight:normal;">
+            Every
+            <select name="interval_hours" style="width:auto; display:inline-block; margin:0 0.3rem;">
+                {% for h in range(1, 13) %}
+                <option value="{{ h }}">{{ h }} hour{{ 's' if h != 1 else '' }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <button type="submit" style="background:{{ workout.color }}; border-color:{{ workout.color }}; font-size:0.9em;">
+            Enable Auto-Grading
+        </button>
+    </form>
+    {% endif %}
+</article>
+
 {% endblock %}

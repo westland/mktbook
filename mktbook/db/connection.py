@@ -146,6 +146,18 @@ async def get_db() -> aiosqlite.Connection:
 
         try:
             await _db.execute("""
+                CREATE TABLE IF NOT EXISTS auto_grade_settings (
+                    workout_id     INTEGER PRIMARY KEY,
+                    interval_hours INTEGER NOT NULL,
+                    updated_at     TEXT    NOT NULL DEFAULT (datetime('now'))
+                )
+            """)
+            await _db.commit()
+        except Exception as exc:
+            log.warning("auto_grade_settings migration skipped: %s", exc)
+
+        try:
+            await _db.execute("""
                 CREATE TABLE IF NOT EXISTS lti_user_bots (
                     id          INTEGER PRIMARY KEY AUTOINCREMENT,
                     lti_user_id TEXT    NOT NULL,

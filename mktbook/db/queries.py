@@ -502,3 +502,41 @@ async def get_bot_stats(bot_id: int) -> dict[str, int]:
         (bot_id, bot_id),
     )).fetchone())["c"]
     return {"messages": msg_count, "conversations": conv_count, "human_interactions": human_count}
+
+
+# ── Auto-grade settings ────────────────────────────────────────────────
+
+async def get_all_auto_grade_settings() -> list[dict]:
+    db = await get_db()
+    rows = await (await db.execute(
+        "SELECT workout_id, interval_hours FROM auto_grade_settings ORDER BY workout_id"
+    )).fetchall()
+    return [{"workout_id": r["workout_id"], "interval_hours": r["interval_hours"]} for r in rows]
+
+
+async def get_auto_grade_setting(workout_id: int) -> int | None:
+    """Return interval_hours for a workout, or None if not set."""
+    db = await get_db()
+    row = await (await db.execute(
+        "SELECT interval_hours FROM auto_grade_settings WHERE workout_id = ?", (workout_id,)
+    )).fetchone()
+    return row["interval_hours"] if row else None
+
+
+async def set_auto_grade_setting(workout_id: int, interval_hours: int) -> None:
+    db = await get_db()
+    await db.execute(
+        """INSERT INTO auto_grade_settings (workout_id, interval_hours, updated_at)
+           VALUES (?, ?, datetime('now'))
+           ON CONFLICT(workout_id) DO UPDATE SET
+               interval_hours = excluded.interval_hours,
+               updated_at     = excluded.updated_at""",
+        (workout_id, interval_hours),
+    )
+    await db.commit()
+
+
+async def delete_auto_grade_setting(workout_id: int) -> None:
+    db = await get_db()
+    await db.execute("DELETE FROM auto_grade_settings WHERE workout_id = ?", (workout_id,))
+    await db.commit()

@@ -114,7 +114,7 @@ Live DB: `/opt/mktbook/repo/mktbook.db`
 
 ## Workout #4 Image Pipeline
 
-Images appear on average **once every 7 conversations** (Poisson-gated, v1.52).
+Images appear on average **once every ~7 message exchanges** (Poisson-gated, v1.52).
 
 ```
 LLM generates response including [IMAGE: ...] or [Creative Image Concept: ...] tag
@@ -123,8 +123,8 @@ extract_image_prompt() in image_gen.py
     clean_text = text before the tag (always displayed)
     image_prompt = text inside the tag
     ↓
-W4ImageGate.should_trigger() — Poisson(λ=6) gate, shared across all W4 conversations
-    returns True ~1 in 7 conversations (average cycle = λ+1 = 7)
+W4ImageGate.should_trigger() — Poisson(λ=6) gate, checked per individual message
+    returns True ~1 in 7 messages (average cycle = λ+1 = 7)
     ↓ (only when gate fires)
 generate_image(image_prompt) via fal_client.run_async("fal-ai/flux/schnell", ...)
     image_url = returned CDN URL (or None on failure)
@@ -143,7 +143,7 @@ Image generation is non-blocking — failures log but don't crash the text pipel
 **Gate implementation** (`bots/image_gen.py`):
 - `W4ImageGate` draws gap lengths from Poisson(6) using Knuth's algorithm (stdlib only, no numpy)
 - `w4_image_gate` singleton is shared by both `loop.py` (bot-bot) and `bot_client.py` (bot-human)
-- The budget for a conversation is determined once per `_run_conversation()` call (0 or 1 image max per conversation)
+- Gate is checked per individual message (both initiator and responder each turn) — mirrors `bot_client.py`; ~1 in 7 messages gets an image
 
 **Credential setup** (both names required):
 ```env

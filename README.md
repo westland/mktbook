@@ -121,7 +121,9 @@ ssh root@144.126.213.48 "journalctl -u mktbook -n 50 --no-pager"
 
 | Version | Description |
 |---------|-------------|
-| **v1.40** | LTI 1.3 integration — Canvas/Blackboard InBox + AGS grade passback |
+| **v1.52** | Poisson-gated W4 image generation (~1 per 7 messages); fix image gate per-message |
+| v1.51 | Password-protected bot deletes, delete FK fixes, usage telemetry, second server |
+| v1.40 | LTI 1.3 integration — Canvas/Blackboard InBox + AGS grade passback |
 | v1.34 | Bot deletion with cascade, Delete button on bot list, copyright notices |
 | v1.33 | AI image generation for Workout #4 via fal.ai FLUX Schnell |
 | v1.20 | Full Discord removal, unified single-service architecture |
@@ -135,7 +137,7 @@ ssh root@144.126.213.48 "journalctl -u mktbook -n 50 --no-pager"
 ---
 
 *MktBook Bot Marketplace — IDS/MKTG518 Electronic Marketing*
-*v1.40 — LTI 1.3 (Canvas/Blackboard), AI image generation, Discord-free*
+*v1.52 — Poisson-gated W4 image generation, LTI 1.3 (Canvas/Blackboard), Discord-free*
 
 
 ---

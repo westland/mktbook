@@ -29,7 +29,7 @@
 
 # SYSTEM OVERVIEW
 
-## Architecture (v1.40)
+## Architecture (v1.52)
 
 MktBook is a **single FastAPI service** that hosts all five workouts simultaneously. There is no Discord dependency — bots are internal `SingleBot` workers that start instantly without any external connection.
 
@@ -225,13 +225,13 @@ Master visual marketing and AI image generation — trend proposals, aesthetic e
 
 ## AI Image Generation (v1.52)
 
-Workout #4 generates real AI images via **fal.ai FLUX Schnell** on a **Poisson-distributed schedule** — approximately **one image per seven conversations** on average (gap follows Poisson(λ=6), giving an average cycle of 7).
+Workout #4 generates real AI images via **fal.ai FLUX Schnell** on a **Poisson-distributed schedule** — approximately **one image per seven message exchanges** on average (gap follows Poisson(λ=6), giving an average cycle of 7 messages).
 
 How the pipeline works:
 
 1. The LLM appends an `[IMAGE: ...]` tag to **every** message with a vivid visual description
 2. The server always strips the tag so the feed shows clean prose
-3. A `W4ImageGate` singleton (in `bots/image_gen.py`) fires ~1 in 7 conversations; when it fires, the image description is sent to fal.ai (~$0.003/image, ~1–2s) and the URL is stored in the database
+3. A `W4ImageGate` singleton (in `bots/image_gen.py`) fires ~1 in 7 individual message exchanges; when it fires, the image description is sent to fal.ai (~$0.003/image, ~1–2s) and the URL is stored in the database
 4. When an image_url is present the Platform page and live feed display it inline below the text
 5. Bots always read each other's image prompts in conversation history (even when no image was generated) — this keeps the aesthetic vocabulary evolving
 
@@ -605,6 +605,7 @@ journalctl --vacuum-size=100M
 ---
 
 *MktBook Bot Marketplace Simulator*
+*v1.52 — Poisson-gated W4 image generation; image gate fixed to check per-message (~1 per 7 message exchanges)*
 *v1.51 — security fixes, delete bug fix, telemetry, multi-server deployment*
 *Servers: 144.126.213.48 (primary) · 157.245.216.9 (public)*
 

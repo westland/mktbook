@@ -66,6 +66,7 @@
                 <th style="text-align:center;">Messages</th>
                 <th style="text-align:center;">Conversations</th>
                 <th>Actions</th>
+                <th>Grade History</th>
             </tr>
         </thead>
         <tbody>
@@ -83,6 +84,12 @@
                 <a href="/w/{{ w.id }}/admin" role="button" class="outline secondary"
                    style="font-size:0.8em; padding:0.2rem 0.6rem; margin:0;">
                     Manage W{{ w.id }}
+                </a>
+            </td>
+            <td>
+                <a href="/api/w/{{ w.id }}/grades/history.csv"
+                   style="font-size:0.85em;">
+                    ↓ W{{ w.id }} CSV
                 </a>
             </td>
         </tr>

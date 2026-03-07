@@ -87,6 +87,17 @@
     </form>
 </article>
 
+{# ── Grade History Export ───────────────────────────────────────────── #}
+<article>
+    <header><strong>Grade History Export</strong></header>
+    <p>Download the full time-series history of every grading run for Workout #{{ workout.id }} as a CSV file.
+       Each row is one bot's grade from one grading run, with all sub-scores and the LLM reasoning.</p>
+    <a href="/api/w/{{ workout.id }}/grades/history.csv" role="button" class="outline"
+       style="border-color:{{ workout.color }}; color:{{ workout.color }}; display:inline-block;">
+        ↓ Download Grade History CSV
+    </a>
+</article>
+
 {# ── Auto-Grading Schedule ──────────────────────────────────────────── #}
 <article>
     <header><strong>Auto-Grading Schedule</strong></header>

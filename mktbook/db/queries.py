@@ -370,6 +370,20 @@ async def get_grades_by_run(grading_run_id: str) -> list[Grade]:
     return [_row_to_grade(r) for r in rows]
 
 
+async def get_grades_for_workout(workout_id: int) -> list[dict]:
+    """Return all grade records for a workout, joined with bot info, newest first."""
+    db = await get_db()
+    rows = await (await db.execute(
+        """SELECT g.*, b.student_name, b.bot_name
+           FROM grades g
+           INNER JOIN bots b ON g.bot_id = b.id
+           WHERE b.workout_id = ?
+           ORDER BY g.created_at DESC""",
+        (workout_id,),
+    )).fetchall()
+    return [dict(r) for r in rows]
+
+
 # ── Admin / Reset ─────────────────────────────────────────────────────
 
 async def get_workout_stats(workout_id: int) -> dict[str, int]:

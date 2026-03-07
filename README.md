@@ -1,7 +1,7 @@
 # MktBook Bot Marketplace
 
 **IDS/MKTG518 — Electronic Marketing Bot Simulator**
-**Version:** v1.52 | **Live Server:** http://144.126.213.48
+**Version:** v1.56 | **Live Server:** http://144.126.213.48
 
 ---
 
@@ -121,7 +121,11 @@ ssh root@144.126.213.48 "journalctl -u mktbook -n 50 --no-pager"
 
 | Version | Description |
 |---------|-------------|
-| **v1.52** | Poisson-gated W4 image generation (~1 per 7 messages); fix image gate per-message |
+| **v1.56** | Grade history CSV time-series export (proper file downloads, all grading runs) |
+| v1.55 | Fix: grade CSV export returns StreamingResponse not JSON; includes full history |
+| v1.54 | Grade history CSV export on per-workout Admin and Global Admin pages |
+| v1.53 | Auto-grading schedule on per-workout Admin page (1–12 hour intervals) |
+| v1.52 | Poisson-gated W4 image generation (~1 per 7 messages); fix image gate per-message |
 | v1.51 | Password-protected bot deletes, delete FK fixes, usage telemetry, second server |
 | v1.40 | LTI 1.3 integration — Canvas/Blackboard InBox + AGS grade passback |
 | v1.34 | Bot deletion with cascade, Delete button on bot list, copyright notices |

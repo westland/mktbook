@@ -1,7 +1,7 @@
-# MKTBOOK COMPLETE DEPLOYMENT MANUAL v1.52
+# MKTBOOK COMPLETE DEPLOYMENT MANUAL v1.56
 ## All 5 Workout Systems: Comprehensive Guide
 
-**Version:** v1.52 — Poisson-gated W4 image generation (~1 image per 7 conversations)
+**Version:** v1.56 — Auto-grading schedule; grade history CSV time-series export
 **Deployment Date:** March 2026
 **Servers:**
 - Primary: DigitalOcean Droplet `144.126.213.48` (mktbook)
@@ -29,7 +29,7 @@
 
 # SYSTEM OVERVIEW
 
-## Architecture (v1.52)
+## Architecture (v1.56)
 
 MktBook is a **single FastAPI service** that hosts all five workouts simultaneously. There is no Discord dependency — bots are internal `SingleBot` workers that start instantly without any external connection.
 
@@ -307,6 +307,25 @@ Once authenticated, a confirmation dialog appears before any data is deleted. De
 ## Resetting a Workout
 
 Go to `/w/{id}/admin` → click **Reset Conversations** (keeps bots, deletes messages/grades) or **Reset All** (deletes bots too).
+
+## Auto-Grading Schedule (v1.53)
+
+The per-workout Admin page (`/w/{id}/admin`) has an **Auto-Grading Schedule** section. Enable it to run the Grade-Bot automatically on a fixed schedule (1–12 hours). The next-run countdown is displayed while enabled. Disable at any time with the "Disable Auto-Grading" button.
+
+## Grade History Export (v1.54–v1.56)
+
+Every grading run is stored as a separate row — the database accumulates a full time-series of scores across the semester. Export it as a CSV from any of these locations:
+
+| Where | URL | Scope |
+|-------|-----|-------|
+| Per-workout Admin page | `/w/{id}/admin` → **Download Grade History CSV** | One workout |
+| Global Admin table | `/admin` → **↓ W# CSV** link per row | One workout |
+| Per-workout Grading page | `/w/{id}/grading` → **Export Grade History CSV** | One workout |
+| API (all workouts) | `GET /api/grading/export` | All workouts |
+
+**CSV columns:** `timestamp`, `grading_run_id`, `workout_id`, `student_name`, `bot_name`, `overall_score`, `objective_score`, `quality_score`, `human_score`, `volume_score`, `total_messages`, `total_conversations`, `human_interactions`, `llm_reasoning`
+
+Each row is one bot's grade from one grading run. Sort or pivot by `grading_run_id` or `timestamp` to track score evolution per student over time.
 
 ## Resetting the Admin Password
 
@@ -605,6 +624,10 @@ journalctl --vacuum-size=100M
 ---
 
 *MktBook Bot Marketplace Simulator*
+*v1.56 — grade history CSV exports (time-series, proper file downloads) from Admin and Grading pages*
+*v1.55 — fix grade CSV export to return StreamingResponse not JSON; include all runs not just latest*
+*v1.54 — grade history CSV export endpoints; per-workout Admin and Global Admin export buttons*
+*v1.53 — auto-grading schedule on per-workout Admin page (1–12 hour interval, stored per workout)*
 *v1.52 — Poisson-gated W4 image generation; image gate fixed to check per-message (~1 per 7 message exchanges)*
 *v1.51 — security fixes, delete bug fix, telemetry, multi-server deployment*
 *Servers: 144.126.213.48 (primary) · 157.245.216.9 (public)*

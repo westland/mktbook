@@ -154,7 +154,7 @@
     {% endif %}
 
     <div style="margin-top: 1rem;">
-        <a href="/api/grading/export" role="button" class="outline" target="_blank">Export CSV</a>
+        <a href="/api/w/{{ workout.id }}/grades/history.csv" role="button" class="outline">Export Grade History CSV</a>
     </div>
 </article>
 {% else %}

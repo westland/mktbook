@@ -203,10 +203,14 @@ async def run_grading(request: Request) -> dict[str, Any]:
 
 
 @router.get("/grading/export")
-async def export_grades() -> dict[str, Any]:
-    from mktbook.grading.export import export_csv
-    csv_text = await export_csv()
-    return {"csv": csv_text}
+async def export_grades(request: Request) -> StreamingResponse:
+    from mktbook.grading.export import export_all_csv
+    csv_text = await export_all_csv()
+    return StreamingResponse(
+        iter([csv_text]),
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="mktbook_grade_history_all.csv"'},
+    )
 
 
 # ── Grade history CSV export ───────────────────────────────────────────

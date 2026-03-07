@@ -374,12 +374,24 @@ async def get_grades_for_workout(workout_id: int) -> list[dict]:
     """Return all grade records for a workout, joined with bot info, newest first."""
     db = await get_db()
     rows = await (await db.execute(
-        """SELECT g.*, b.student_name, b.bot_name
+        """SELECT g.*, b.student_name, b.bot_name, b.workout_id
            FROM grades g
            INNER JOIN bots b ON g.bot_id = b.id
            WHERE b.workout_id = ?
            ORDER BY g.created_at DESC""",
         (workout_id,),
+    )).fetchall()
+    return [dict(r) for r in rows]
+
+
+async def get_all_grades_history() -> list[dict]:
+    """Return ALL grade records across all workouts, joined with bot info, newest first."""
+    db = await get_db()
+    rows = await (await db.execute(
+        """SELECT g.*, b.student_name, b.bot_name, b.workout_id
+           FROM grades g
+           INNER JOIN bots b ON g.bot_id = b.id
+           ORDER BY g.created_at DESC"""
     )).fetchall()
     return [dict(r) for r in rows]
 

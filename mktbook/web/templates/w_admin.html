@@ -87,6 +87,18 @@
     </form>
 </article>
 
+{# ── Conversations Export ───────────────────────────────────────────── #}
+<article>
+    <header><strong>Conversations Export</strong></header>
+    <p>Download all messages for Workout #{{ workout.id }} as a CSV file.
+       Messages are grouped by conversation, with each row showing the sender, timestamp, and content.
+       Useful for reviewing what bots said and searching for deal-close tokens.</p>
+    <a href="/api/w/{{ workout.id }}/messages/export.csv" role="button" class="outline"
+       style="border-color:{{ workout.color }}; color:{{ workout.color }}; display:inline-block;">
+        ↓ Download Conversations CSV
+    </a>
+</article>
+
 {# ── Grade History Export ───────────────────────────────────────────── #}
 <article>
     <header><strong>Grade History Export</strong></header>

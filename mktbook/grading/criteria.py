@@ -66,22 +66,41 @@ CRITICAL INSTRUCTION: You MUST use the full 0–120 range. Do NOT cluster scores
 The grading distribution across the class MUST include bots under 20 and bots over 100. \
 Failure to spread scores appropriately defeats the purpose of grading.
 
+**Objective Score now rewards the full sales funnel — not just closed deals:**
+Pitch activity (presenting offers, getting positive responses, absorbing rejections) earns \
+SMALL points relative to deal-closing bonuses. A bot that pitches actively but never closes \
+earns more than a bot that never tries, but far less than a bot that actually closes.
+
 **Scale definition (apply to every sub-score):**
-- 0–15  : Complete failure — bot never attempted a deal, content is gibberish or off-topic
-- 16–30 : Minimal — sales-adjacent language present but no structure, no pitch, no close attempt
-- 31–50 : Below average — recognizable sales effort but circular/robotic; same pitch repeated \
-           without adapting; zero confirmed closes
-- 51–70 : Average — clear pitch structure, some objection handling, but no confirmed deal closings
-- 71–90 : Above average — sophisticated deal-making behavior, at least one near-close or \
-           implicit agreement detected
-- 91–100: Strong — one or more EXPLICIT semantic agreement tokens confirmed \
-           ("I accept", "deal", "agreed", "you've got a deal", "we have a deal", "I'll take it")
-- 101–120: Exceptional — multiple confirmed deals AND creative arbitrage or a dominant negotiation \
-            strategy. Reserve ONLY for genuinely outstanding bots.
+- 0–15  : Complete failure — bot never attempted a pitch or deal; off-topic or silent
+- 16–30 : Minimal — sales-adjacent language but no structured pitch attempt
+- 31–50 : Below average — pitches attempted but circular/robotic; no closes; heavy rejections
+- 51–70 : Average — clear structured pitches, some positive responses, no confirmed closes
+- 71–90 : Above average — multiple accepted pitches or at least one soft/implicit close detected
+- 91–100: Strong — one or more CONFIRMED closes via explicit semantic agreement tokens
+- 101–120: Exceptional — multiple confirmed closes AND creative strategy or arbitrage. \
+            Reserve ONLY for genuinely outstanding bots.
+
+**Confirmed Close — Semantic Agreement Tokens (any of these count):**
+Explicit: "I accept", "deal", "agreed", "you've got a deal", "we have a deal", "I'll take it", \
+"sold", "done deal", "it's a deal", "you're on", "consider it done", "I'll buy it", \
+"let's proceed", "I'll take that", "you have my business"
+Soft (count as half-close, 0.5): "let's do it", "I'm in", "count me in", "let's go", \
+"sounds good, let's do this", "I'll go ahead", "we're good"
+
+**Accepted Pitch — Positive Engagement Signals (NOT a close, but earns small bonus):**
+"I'm interested", "tell me more", "sounds promising", "I like it", "I'm considering it", \
+"I'm open to it", "this is interesting", "that sounds fair"
+
+**Rejected Pitch — Explicit Refusal Signals (earns small deduction):**
+"not interested", "no thank you", "I'll pass", "not for me", "no deal", "I decline", \
+"we're done here", "I'm walking away"
 
 **Hard rules:**
-- objective_score (Deals Closed) MUST be 0–20 if zero semantic agreement tokens appear in ALL conversations.
-- Apply a −15 penalty (minimum 0) to objective_score when circular logic is detected \
+- objective_score MUST be 0–20 if zero pitches were attempted and zero tokens appear.
+- objective_score MUST NOT exceed 50 if zero confirmed closes (explicit or soft) appear, \
+  regardless of pitch/acceptance count.
+- Apply a −10 penalty (minimum 0) to objective_score when circular logic is detected \
   (same pitch repeated 3+ times without substantive adaptation).
 - quality_score MUST be 0–30 for bots that never adapted their pitch to any counterargument.
 - volume_score of 0 is mandatory for bots with 0 messages.
@@ -92,7 +111,7 @@ Respond ONLY with valid JSON in this exact format (scores are integers or one de
   "quality_score": <0-120>,
   "human_score": <0-120>,
   "volume_score": <0-120>,
-  "reasoning": "<3-5 sentences. Cite specific evidence. State exactly how many semantic agreement tokens were found.>"
+  "reasoning": "<3-5 sentences. Cite specific evidence. State: (a) number of structured pitches presented, (b) number of accepted pitches, (c) number of rejected pitches, (d) number of confirmed closes (full and soft).>"
 }
 """
 
@@ -116,14 +135,34 @@ Grade this deal-closing bot for Workout #3 (The Agentic Economy).
 **Scoring Criteria (0–120 scale; scores >100 require extraordinary evidence):**
 
 1. **Deals Closed / Objective Score (weight 35%):**
-   Scan every conversation for explicit semantic agreement tokens: "I accept", "deal", "agreed",
-   "you've got a deal", "we have a deal", "I'll take it", "sold", "done deal", or equivalent.
-   - 0 tokens + zero deal attempts           → 0–15
-   - 0 tokens + some attempts but no close   → 16–40  (apply −15 if circular/robotic)
-   - Implicit close signals only             → 41–65
-   - 1 confirmed explicit close              → 66–85
-   - 2–3 confirmed explicit closes           → 86–100
-   - 4+ closes or creative arbitrage pipeline → 101–120
+   Evaluate the full pitch-to-close funnel using this THREE-STEP formula:
+
+   STEP 1 — Pitch Activity Base (small points, rewards effort):
+   - 0 structured pitches presented:                   0 pts
+   - 1–2 structured pitches presented:                +8 pts
+   - 3–5 structured pitches presented:               +12 pts
+   - 6+ structured pitches presented:                +16 pts
+   A "structured pitch" = a clear value proposition offered to another bot/human.
+
+   STEP 2 — Pitch Outcome Adjustments (small, applied to base):
+   - Each accepted pitch (positive engagement, no close): +4 pts  (max +12)
+   - Each rejected pitch (explicit refusal):              −3 pts  (floor: 0)
+   After Steps 1+2, cap at 50 if zero confirmed closes.
+
+   STEP 3 — Deal Close Bonus (main scoring driver):
+   - 0 confirmed closes:                    +0  (total = Steps 1+2, max 50)
+   - 1 soft close (half-close token):      +25
+   - 1 full confirmed close:               +38
+   - 2–3 confirmed closes (any mix):       +58
+   - 4+ closes or creative arbitrage:      +75 (may push above 100; cap at 120)
+
+   Examples:
+   → 0 pitches, 0 closes               = 0 pts
+   → 4 pitches, 2 accepted, 0 closes   = 12+8 = 20 pts
+   → 4 pitches, 2 accepted, 1 soft close = 20+25 = 45 pts
+   → 4 pitches, 2 accepted, 1 full close = 20+38 = 58 pts
+   → 6 pitches, 3 accepted, 3 closes   = (16+12)+58 = 86 pts
+   → 8 pitches, 4 accepted, 5 closes   = (16+12)+75 = 103 pts
 
 2. **Conversation Quality (weight 30%):**
    Evaluate pitch coherence, adaptability, and negotiation craft.

@@ -26,6 +26,18 @@ class ConversationScheduler:
         self.fleet = fleet
         self.ws = ws
         self._running = False
+        self._paused_workouts: set[int] = set()
+
+    def pause_workout(self, workout_id: int) -> None:
+        self._paused_workouts.add(workout_id)
+        log.info("Conversations paused for workout %d", workout_id)
+
+    def resume_workout(self, workout_id: int) -> None:
+        self._paused_workouts.discard(workout_id)
+        log.info("Conversations resumed for workout %d", workout_id)
+
+    def is_paused(self, workout_id: int) -> bool:
+        return workout_id in self._paused_workouts
 
     async def run(self) -> None:
         self._running = True
@@ -45,8 +57,11 @@ class ConversationScheduler:
             for b in active:
                 by_workout.setdefault(b.bot_row.workout_id, []).append(b)
 
-            # Only consider workouts that have at least 2 active bots
-            eligible = {wid: bots for wid, bots in by_workout.items() if len(bots) >= 2}
+            # Only consider workouts that have at least 2 active bots and are not paused
+            eligible = {
+                wid: bots for wid, bots in by_workout.items()
+                if len(bots) >= 2 and wid not in self._paused_workouts
+            }
             if not eligible:
                 continue
 

@@ -290,7 +290,9 @@ async def w_platform_post(
     if not workout:
         return HTMLResponse("<h1>Workout not found</h1>", status_code=404)
     fleet = request.app.state.fleet
-    if fleet and message_content.strip():
+    scheduler = getattr(request.app.state, "scheduler", None)
+    paused = scheduler.is_paused(workout_id) if scheduler else False
+    if fleet and message_content.strip() and not paused:
         await fleet.dispatch_human_message(
             workout_id=workout_id,
             author_name=author_name.strip() or "Visitor",
@@ -322,6 +324,9 @@ async def w_admin_page(
     else:
         mins_until = None
 
+    scheduler = getattr(request.app.state, "scheduler", None)
+    workout_paused = scheduler.is_paused(workout_id) if scheduler else False
+
     return TEMPLATES.TemplateResponse("w_admin.html", {
         "request": request,
         "workout": workout,
@@ -330,6 +335,7 @@ async def w_admin_page(
         "active_page": "admin",
         "auto_grade_hours": auto_grade_hours,
         "auto_grade_mins_until": mins_until,
+        "workout_paused": workout_paused,
     })
 
 
@@ -349,6 +355,23 @@ async def w_admin_set_auto_grade(
         else:
             interval_hours = max(1, min(12, interval_hours))
             await auto_grader.set(workout_id, interval_hours)
+    return RedirectResponse(url=f"/w/{workout_id}/admin", status_code=303)
+
+
+@router.post("/w/{workout_id}/admin/pause", response_model=None)
+async def w_admin_toggle_pause(
+    request: Request,
+    workout_id: int,
+) -> RedirectResponse:
+    """Pause or resume bot-bot conversations for this workout."""
+    if not is_authenticated(request):
+        return redirect_to_login(f"/w/{workout_id}/admin")
+    scheduler = getattr(request.app.state, "scheduler", None)
+    if scheduler:
+        if scheduler.is_paused(workout_id):
+            scheduler.resume_workout(workout_id)
+        else:
+            scheduler.pause_workout(workout_id)
     return RedirectResponse(url=f"/w/{workout_id}/admin", status_code=303)
 
 

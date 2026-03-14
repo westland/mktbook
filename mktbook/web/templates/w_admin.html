@@ -60,6 +60,34 @@
     </div>
 </article>
 
+{# ── Pause / Resume Conversations ──────────────────────────────────── #}
+<article>
+    <header><strong>Conversation Control</strong></header>
+    {% if workout_paused %}
+    <p>
+        Bot-bot conversations are <strong style="color:#e67e22;">paused</strong> for Workout #{{ workout.id }}.
+        Bots will not start any new conversations until you resume them.
+        Human posts are also held.
+    </p>
+    <form method="post" action="/w/{{ workout.id }}/admin/pause">
+        <button type="submit" style="background:#2ecc71; border-color:#2ecc71;">
+            ▶ Resume Conversations
+        </button>
+    </form>
+    {% else %}
+    <p>
+        Bot-bot conversations are <strong style="color:#2ecc71;">running</strong> for Workout #{{ workout.id }}.
+        Click below to stop all new conversations immediately — useful when the workout period has ended.
+        Bots remain registered; use Resume to restart at any time.
+    </p>
+    <form method="post" action="/w/{{ workout.id }}/admin/pause">
+        <button type="submit" class="outline" style="border-color:#e67e22; color:#e67e22;">
+            ⏸ Pause Conversations
+        </button>
+    </form>
+    {% endif %}
+</article>
+
 {# ── Reset conversations only ──────────────────────────────────────── #}
 <article>
     <header><strong>Reset Conversations</strong></header>

@@ -262,12 +262,13 @@ async def export_grades_history_csv(workout_id: int, request: Request) -> Stream
 @router.get("/w/{workout_id}/messages/export.csv")
 async def export_messages_csv(workout_id: int) -> StreamingResponse:
     """Download all messages for a workout as a CSV file, grouped by conversation."""
-    msgs = await queries.get_messages_for_workout(workout_id=workout_id, limit=10000)
+    # No limit — fetch all messages for the full workout period
+    msgs = await queries.get_messages_for_workout(workout_id=workout_id)
 
     # Sort by conversation_id then by id (chronological within each conversation)
     sorted_msgs = sorted(
-        reversed(msgs),
-        key=lambda m: (m.conversation_id or "", m.id),
+        msgs,
+        key=lambda m: (m.conversation_id or 0, m.id),
     )
 
     output = io.StringIO()

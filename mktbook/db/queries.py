@@ -259,21 +259,35 @@ async def get_messages(limit: int = 100, bot_id: int | None = None) -> list[Mess
     return [_row_to_message(r) for r in rows]
 
 
-async def get_messages_for_workout(workout_id: int, limit: int = 500) -> list[Message]:
+async def get_messages_for_workout(workout_id: int, limit: int | None = None) -> list[Message]:
     """Return all messages (bot + human) scoped to a specific workout."""
     db = await get_db()
-    rows = await (await db.execute(
-        """SELECT DISTINCT m.* FROM messages m
-           LEFT JOIN bots b ON m.bot_id = b.id
-           WHERE b.workout_id = ?
-              OR (m.author_type = 'human' AND m.conversation_id IN (
-                    SELECT c.id FROM conversations c
-                    JOIN bots b2 ON (b2.id = c.initiator_bot_id OR b2.id = c.responder_bot_id)
-                    WHERE b2.workout_id = ?
-                  ))
-           ORDER BY m.created_at DESC LIMIT ?""",
-        (workout_id, workout_id, limit),
-    )).fetchall()
+    if limit is not None:
+        rows = await (await db.execute(
+            """SELECT DISTINCT m.* FROM messages m
+               LEFT JOIN bots b ON m.bot_id = b.id
+               WHERE b.workout_id = ?
+                  OR (m.author_type = 'human' AND m.conversation_id IN (
+                        SELECT c.id FROM conversations c
+                        JOIN bots b2 ON (b2.id = c.initiator_bot_id OR b2.id = c.responder_bot_id)
+                        WHERE b2.workout_id = ?
+                      ))
+               ORDER BY m.created_at DESC LIMIT ?""",
+            (workout_id, workout_id, limit),
+        )).fetchall()
+    else:
+        rows = await (await db.execute(
+            """SELECT DISTINCT m.* FROM messages m
+               LEFT JOIN bots b ON m.bot_id = b.id
+               WHERE b.workout_id = ?
+                  OR (m.author_type = 'human' AND m.conversation_id IN (
+                        SELECT c.id FROM conversations c
+                        JOIN bots b2 ON (b2.id = c.initiator_bot_id OR b2.id = c.responder_bot_id)
+                        WHERE b2.workout_id = ?
+                      ))
+               ORDER BY m.created_at ASC""",
+            (workout_id, workout_id),
+        )).fetchall()
     return [_row_to_message(r) for r in rows]
 
 

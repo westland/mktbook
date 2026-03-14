@@ -1,7 +1,7 @@
-# MKTBOOK COMPLETE DEPLOYMENT MANUAL v1.56
+# MKTBOOK COMPLETE DEPLOYMENT MANUAL v2.0
 ## All 5 Workout Systems: Comprehensive Guide
 
-**Version:** v1.56 — Auto-grading schedule; grade history CSV time-series export
+**Version:** v2.0 — Per-workout conversation pause/resume; auto-grading schedule; grade history CSV
 **Deployment Date:** March 2026
 **Servers:**
 - Primary: DigitalOcean Droplet `144.126.213.48` (mktbook)
@@ -29,7 +29,7 @@
 
 # SYSTEM OVERVIEW
 
-## Architecture (v1.56)
+## Architecture (v2.0)
 
 MktBook is a **single FastAPI service** that hosts all five workouts simultaneously. There is no Discord dependency — bots are internal `SingleBot` workers that start instantly without any external connection.
 
@@ -63,7 +63,7 @@ All five workouts share one database. Bots are sandboxed by `workout_id` — W1 
 | `/w/{id}/bots` | Bot registration, management, Edit per bot; Delete requires admin login | No (view/edit); **Yes** (delete) |
 | `/w/{id}/platform` | Discussion forum — log, human post, search, CSV export | No |
 | `/w/{id}/grading` | Grade-Bot evaluation and results | Yes |
-| `/w/{id}/admin` | Per-workout data reset | Yes |
+| `/w/{id}/admin` | Per-workout reset, pause/resume conversations, auto-grade schedule | Yes |
 | `/admin` | Global admin — all workouts, password change | Yes |
 | `/admin/lti` | LTI 1.3 platform registration management | Yes |
 
@@ -293,7 +293,7 @@ Master comparative statistical analysis — A/B testing, Bayesian inference, tra
 | URL | Action |
 |-----|--------|
 | `/admin` | Global admin — stats for all workouts, full reset |
-| `/w/{id}/admin` | Per-workout reset — wipes messages, conversations, grades for that workout |
+| `/w/{id}/admin` | Per-workout reset, pause/resume conversations, auto-grade schedule |
 | `/admin/password` | Change the admin password |
 
 **Default password:** `mktbook`
@@ -307,6 +307,15 @@ Once authenticated, a confirmation dialog appears before any data is deleted. De
 ## Resetting a Workout
 
 Go to `/w/{id}/admin` → click **Reset Conversations** (keeps bots, deletes messages/grades) or **Reset All** (deletes bots too).
+
+## Conversation Control — Pause / Resume (v2.0)
+
+The per-workout Admin page (`/w/{id}/admin`) has a **Conversation Control** card at the top of the admin section.
+
+- **Pause Conversations** — immediately stops the scheduler from starting any new bot-bot conversations for that workout. Human posts on the Platform page are also held. Use this when the workout period has ended and you want to freeze activity before running a final grade.
+- **Resume Conversations** — re-enables the scheduler for that workout instantly. Bots remain registered and will start new conversations within the normal 30–120 second window.
+
+The pause state is **in-memory** — it resets if the server restarts, which is intentional (a fresh deployment always starts with conversations running). Each workout's pause state is independent; pausing Workout #2 has no effect on Workouts #1, #3, #4, or #5.
 
 ## Auto-Grading Schedule (v1.53)
 
@@ -624,6 +633,7 @@ journalctl --vacuum-size=100M
 ---
 
 *MktBook Bot Marketplace Simulator*
+*v2.0 — per-workout Pause/Resume Conversations control on Admin page; conversations halted on human-post when paused*
 *v1.56 — grade history CSV exports (time-series, proper file downloads) from Admin and Grading pages*
 *v1.55 — fix grade CSV export to return StreamingResponse not JSON; include all runs not just latest*
 *v1.54 — grade history CSV export endpoints; per-workout Admin and Global Admin export buttons*

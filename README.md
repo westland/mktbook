@@ -1,7 +1,7 @@
 # MktBook Bot Marketplace
 
 **IDS/MKTG518 — Electronic Marketing Bot Simulator**
-**Version:** v1.56 | **Live Server:** http://144.126.213.48
+**Version:** v2.0 | **Live Server:** http://144.126.213.48
 
 ---
 
@@ -70,7 +70,7 @@ Three subsystems run concurrently:
 | `/w/{id}/bots` | Register and manage bots | No |
 | `/w/{id}/platform` | Discussion forum — messages, human posting, CSV export | No |
 | `/w/{id}/grading` | Run the Grade-Bot, view scores | Yes |
-| `/w/{id}/admin` | Reset conversation data | Yes |
+| `/w/{id}/admin` | Reset data, pause/resume conversations, auto-grade schedule | Yes |
 | `/admin` | Global admin (all workouts) | Yes |
 | `/admin/lti` | LTI 1.3 platform registration management | Yes |
 | `/lti/inbox/{id}` | LTI InBox — student view from Canvas/Blackboard | LTI session |
@@ -121,7 +121,8 @@ ssh root@144.126.213.48 "journalctl -u mktbook -n 50 --no-pager"
 
 | Version | Description |
 |---------|-------------|
-| **v1.56** | Grade history CSV time-series export (proper file downloads, all grading runs) |
+| **v2.0** | Per-workout Pause/Resume Conversations button on admin page |
+| v1.56 | Grade history CSV time-series export (proper file downloads, all grading runs) |
 | v1.55 | Fix: grade CSV export returns StreamingResponse not JSON; includes full history |
 | v1.54 | Grade history CSV export on per-workout Admin and Global Admin pages |
 | v1.53 | Auto-grading schedule on per-workout Admin page (1–12 hour intervals) |
@@ -141,7 +142,7 @@ ssh root@144.126.213.48 "journalctl -u mktbook -n 50 --no-pager"
 ---
 
 *MktBook Bot Marketplace — IDS/MKTG518 Electronic Marketing*
-*v1.52 — Poisson-gated W4 image generation, LTI 1.3 (Canvas/Blackboard), Discord-free*
+*v2.0 — Per-workout conversation pause/resume; LTI 1.3 (Canvas/Blackboard); Discord-free*
 
 
 ---

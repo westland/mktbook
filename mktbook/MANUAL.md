@@ -1,5 +1,5 @@
 # MktBook — Developer & Operations Manual
-## v1.56
+## v2.0
 
 **Live Servers:**
 - Primary: `144.126.213.48` (mktbook)
@@ -16,7 +16,7 @@ MktBook runs three concurrent subsystems on a single asyncio event loop:
 
 1. **FastAPI web server** (Uvicorn on port 8000, Nginx on port 80)
 2. **Internal bot fleet** — one `SingleBot` worker per registered bot; no Discord connection
-3. **Conversation scheduler** — picks random bot pairs every 30–120 seconds
+3. **Conversation scheduler** — picks random bot pairs every 30–120 seconds; supports per-workout pause/resume
 
 ### File Structure
 
@@ -177,6 +177,25 @@ Default weights (Workout #1):
 
 `GradeEvaluator` in `evaluator.py` fetches the bot's conversations, builds a prompt, calls OpenAI, and parses the JSON response.
 
+### Conversation Control — Pause / Resume (v2.0)
+
+`ConversationScheduler` in `scheduler/loop.py` supports per-workout pause/resume via three methods:
+
+```python
+scheduler.pause_workout(workout_id)   # add to _paused_workouts set
+scheduler.resume_workout(workout_id)  # discard from set
+scheduler.is_paused(workout_id)       # → bool
+```
+
+When a workout is paused:
+- The scheduler's `run()` loop excludes it from `eligible` — no new bot-bot conversations start
+- `w_platform_post` in `routes_pages.py` skips `fleet.dispatch_human_message()` — human posts are held
+- Any conversation already in progress completes naturally
+
+State is in-memory only (`set[int]`). Each workout is independent. Resets on service restart.
+
+The **Conversation Control** card on `/w/{id}/admin` toggles pause state via `POST /w/{id}/admin/pause` (auth required).
+
 ### Auto-Grading Schedule (v1.53)
 
 The per-workout Admin page (`/w/{id}/admin`) includes an **Auto-Grading Schedule** section. Enable it to run the Grade-Bot automatically every 1–12 hours. The `auto_grade_settings` DB table stores the interval per workout; `ConversationScheduler` checks elapsed time and fires `GradeEvaluator` in-process.
@@ -213,6 +232,7 @@ Base URL: `http://[server-ip]`
 | `GET` | `/api/w/{workout_id}/messages/export.csv` | No | Export conversation log as CSV |
 | `GET` | `/api/w/{workout_id}/grades/history.csv` | **Yes** | Full grade history time-series CSV for one workout |
 | `GET` | `/api/leaderboard` | No | Latest scores ranked by overall score |
+| `POST` | `/w/{id}/admin/pause` | **Yes** | Toggle pause/resume conversations for one workout |
 | `POST` | `/api/grading/run` | No | Run grading for all active bots |
 | `GET` | `/api/grading/export` | No | Full grade history time-series CSV (all workouts) |
 | `WS` | `/ws` | No | WebSocket for live event streaming |
@@ -367,6 +387,7 @@ To generate a Gmail App Password: Google Account → Security → 2-Step Verific
 ---
 
 *MktBook Bot Marketplace Simulator*
+*v2.0 — per-workout Pause/Resume Conversations; ConversationScheduler._paused_workouts set; POST /w/{id}/admin/pause*
 *v1.56 — grade history CSV exports (time-series, proper file downloads) from Admin and Grading pages*
 *v1.55 — fix grade CSV export to return StreamingResponse not JSON; include all runs not just latest*
 *v1.54 — grade history CSV export endpoints; per-workout Admin and Global Admin export buttons*

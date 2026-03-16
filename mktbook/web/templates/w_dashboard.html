@@ -52,6 +52,7 @@
                         <th>Student</th>
                         <th>Score</th>
                         <th>{{ workout.leaderboard_col }}</th>
+                        <th>Reasoning</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -62,6 +63,11 @@
                         <td>{{ entry.student_name }}</td>
                         <td><strong>{{ "%.1f"|format(entry.overall_score) }}</strong></td>
                         <td>{{ "%.1f"|format(entry[workout.leaderboard_col_key]) }}</td>
+                        <td>
+                            {% if entry.llm_reasoning %}
+                            <details><summary>View</summary>{{ entry.llm_reasoning }}</details>
+                            {% else %}<small>—</small>{% endif %}
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>

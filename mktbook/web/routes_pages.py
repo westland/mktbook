@@ -62,6 +62,7 @@ async def w_dashboard(request: Request, workout_id: int) -> HTMLResponse:
                 "human_score": g.human_score,
                 "volume_score": g.volume_score,
                 "bot_id": g.bot_id,
+                "llm_reasoning": g.llm_reasoning,
             })
     # Get bot IDs for this workout to filter messages
     bot_ids = {b.id for b in bots}
@@ -269,16 +270,12 @@ async def w_platform_page(
         msgs = await queries.get_messages(limit=500, bot_id=bot_id)
     else:
         msgs = await queries.get_messages_for_workout(workout_id=workout_id, limit=500)
-    all_grades = await queries.get_latest_grades()
-    bot_ids = {b.id for b in bots}
-    reasoning_map = {g.bot_id: g.llm_reasoning for g in all_grades if g.bot_id in bot_ids and g.llm_reasoning}
     return TEMPLATES.TemplateResponse("w_platform.html", {
         "request": request,
         "workout": workout,
         "messages": msgs,
         "bots": bots,
         "selected_bot_id": bot_id,
-        "reasoning_map": reasoning_map,
     })
 
 

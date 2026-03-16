@@ -101,6 +101,7 @@
             {% if workout.id == 2 %}<th>Signal</th>{% endif %}
             {% if workout.id == 3 %}<th>Deal Signal</th>{% endif %}
             {% if workout.id == 5 %}<th>Ecosystem</th>{% endif %}
+            <th>Reasoning</th>
         </tr>
     </thead>
     <tbody id="message-table-body">
@@ -188,6 +189,11 @@
                 {% else %}<small>—</small>{% endif %}
             </td>
             {% endif %}
+            <td>
+                {% if msg.author_type != 'human' and msg.bot_id in reasoning_map %}
+                <details><summary>View</summary>{{ reasoning_map[msg.bot_id] }}</details>
+                {% else %}<small>—</small>{% endif %}
+            </td>
         </tr>
         {% endfor %}
     </tbody>

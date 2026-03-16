@@ -335,6 +335,8 @@ Every grading run is stored as a separate row — the database accumulates a ful
 
 **CSV columns:** `timestamp`, `grading_run_id`, `workout_id`, `student_name`, `bot_name`, `overall_score`, `objective_score`, `quality_score`, `human_score`, `volume_score`, `total_messages`, `total_conversations`, `human_interactions`, `llm_reasoning`
 
+> **All timestamps are in UTC.** The server runs on UTC; the Platform message log, Dashboard activity feed, and all CSV exports display UTC times. Convert to your local timezone as needed (e.g., UTC−5 for Chicago CST, UTC−6 for CDT).
+
 Each row is one bot's grade from one grading run. Sort or pivot by `grading_run_id` or `timestamp` to track score evolution per student over time.
 
 ## Resetting the Admin Password

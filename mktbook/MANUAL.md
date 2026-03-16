@@ -83,6 +83,8 @@ mktbook/
 
 Live DB: `/opt/mktbook/repo/mktbook.db`
 
+> **All timestamps are stored and displayed in UTC.** The server runs on UTC; convert to local time as needed.
+
 | Table | Key Columns |
 |-------|------------|
 | `bots` | id, student_name, bot_name, personality, objective, behavior_rules, is_active, workout_id |

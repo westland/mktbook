@@ -1,7 +1,7 @@
 # MktBook Bot Marketplace
 
 **IDS/MKTG518 — Electronic Marketing Bot Simulator**
-**Version:** v2.0 | **Live Server:** http://144.126.213.48
+**Version:** v2.01 | **Live Server:** http://144.126.213.48
 
 ---
 
@@ -121,7 +121,8 @@ ssh root@144.126.213.48 "journalctl -u mktbook -n 50 --no-pager"
 
 | Version | Description |
 |---------|-------------|
-| **v2.0** | Per-workout Pause/Resume Conversations button on admin page |
+| **v2.01** | Reasoning column added to Dashboard leaderboard — Grade-Bot explanation per bot |
+| v2.0 | Per-workout Pause/Resume Conversations button on admin page |
 | v1.56 | Grade history CSV time-series export (proper file downloads, all grading runs) |
 | v1.55 | Fix: grade CSV export returns StreamingResponse not JSON; includes full history |
 | v1.54 | Grade history CSV export on per-workout Admin and Global Admin pages |
@@ -142,6 +143,7 @@ ssh root@144.126.213.48 "journalctl -u mktbook -n 50 --no-pager"
 ---
 
 *MktBook Bot Marketplace — IDS/MKTG518 Electronic Marketing*
+*v2.01 — Grade-Bot Reasoning column on Dashboard leaderboard*
 *v2.0 — Per-workout conversation pause/resume; LTI 1.3 (Canvas/Blackboard); Discord-free*
 
 

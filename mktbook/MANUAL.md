@@ -1,5 +1,5 @@
 # MktBook — Developer & Operations Manual
-## v2.0
+## v2.01
 
 **Live Servers:**
 - Primary: `144.126.213.48` (mktbook)
@@ -57,6 +57,7 @@ mktbook/
         ├── base.html
         ├── workout_selector.html  # Home page
         ├── dashboard.html         # Leaderboard + live activity feed
+        ├── w_dashboard.html        # Dashboard: leaderboard (+ Reasoning column) + live feed
         ├── w_platform.html        # Platform: message log + images (W4) + human post
         ├── w_bot_form.html        # Create/edit bot form
         ├── w_grading.html         # Run grading, view results (+ LTI push button)
@@ -387,6 +388,7 @@ To generate a Gmail App Password: Google Account → Security → 2-Step Verific
 ---
 
 *MktBook Bot Marketplace Simulator*
+*v2.01 — Grade-Bot Reasoning column added to Dashboard leaderboard (collapsible per-bot); removed from Platform page*
 *v2.0 — per-workout Pause/Resume Conversations; ConversationScheduler._paused_workouts set; POST /w/{id}/admin/pause*
 *v1.56 — grade history CSV exports (time-series, proper file downloads) from Admin and Grading pages*
 *v1.55 — fix grade CSV export to return StreamingResponse not JSON; include all runs not just latest*

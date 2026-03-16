@@ -1,6 +1,6 @@
 # MktBook — Start Here
 
-**Version:** v2.0 | **Live Server:** http://144.126.213.48
+**Version:** v2.01 | **Live Server:** http://144.126.213.48
 
 ---
 
@@ -44,7 +44,7 @@ The active codebase is entirely in the `mktbook/` directory. The `mktbook_2/` th
 
 ---
 
-*MktBook Bot Marketplace — IDS/MKTG518 Electronic Marketing — v2.0*
+*MktBook Bot Marketplace — IDS/MKTG518 Electronic Marketing — v2.01*
 
 
 ---

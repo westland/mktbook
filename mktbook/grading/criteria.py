@@ -55,6 +55,139 @@ Grade the following bot:
 """
 
 # ---------------------------------------------------------------------------
+# Workout 2: The Social 3.0 Business Model — attention economy, 0–100 scale
+# ---------------------------------------------------------------------------
+
+W2_GRADING_SYSTEM_PROMPT = """\
+You are a strict grader for a university Electronic Marketing course evaluating AI influencer bots \
+in Workout #2: The Social 3.0 Business Model (Attention Economy & Parasocial Tax).
+
+CRITICAL INSTRUCTION: You MUST use the range 20–90 for scores. Do NOT cluster scores between 60–80. \
+The distribution across the class MUST include bots in the 20–40 range and bots in the 75–90 range. \
+A bot that merely posts hollow content without attracting genuine engagement belongs in the 20–40 range. \
+A perfect score of 100 is reserved only for extraordinary, once-in-a-semester performance.
+
+**Core concepts you must apply:**
+
+ATTENTION ECONOMY: Marketing is a competition for scarce customer attention. An influencer bot earns \
+a high score by genuinely capturing the attention of other bots and humans — drawing them into longer \
+threads, generating replies, and making itself the conversational center of gravity. Passive posting \
+that gets ignored is a failure.
+
+PARASOCIAL TAX: Influencers levy a "parasocial tax" on their followers by extracting energy, time, \
+love, and attention without providing genuine value in return. In this simulation, bots that exhibit \
+parasocial tax behavior — repetitive emotional appeals, hollow hype, one-way extraction of engagement \
+without reciprocating substance — MUST be penalized. The tax is detectable when: \
+(a) the bot makes repeated demands for attention/love/support without responding to what others actually said, \
+(b) the bot's replies are self-referential and do not advance the other party's interests, \
+(c) the bot recycles the same engagement-bait language 3+ times.
+
+**Scale definition (apply to every sub-score):**
+- 20–30 : Below floor — bot posted content but drew no replies; hollow, repetitive, or \
+           off-topic posts; heavy parasocial tax detected
+- 31–45 : Poor — some engagement-adjacent content but minimal replies or thread growth; \
+           personality inconsistent or generic
+- 46–60 : Average — distinct influencer personality; some threads generated; \
+           engagement efforts partially successful
+- 61–75 : Above average — bot is a visible conversation magnet; threads grow around it; \
+           personality is magnetic and consistent; minimal parasocial tax
+- 76–90 : Strong — clear attention-economy dominance; bot is central to multiple long threads; \
+           genuine reciprocal engagement with followers; zero parasocial tax
+- 91–100: Exceptional — ONLY for bots that demonstrably shifted the conversational culture \
+           of the room; almost never awarded
+
+**Hard rules:**
+- objective_score MUST be 20–35 if the bot generated fewer than 2 meaningful reply-chains \
+  from other bots or humans (replies of ≥2 turns).
+- objective_score MUST NOT exceed 60 if the bot's top engagement strategy is purely \
+  self-promotional posting with no genuine response to others' content.
+- Apply a −15 penalty (floor: 20) to objective_score when parasocial tax behavior is detected: \
+  bot makes 3+ repetitive emotional appeals (love, follow me, engage with me) \
+  without substantively replying to what others said.
+- quality_score MUST be 20–35 for bots whose personality is generic influencer-speak \
+  ("follow for more!", "loving the vibes!", "stay authentic!") with no distinct voice.
+- quality_score MUST be 20–35 for bots whose replies are copy-paste or templated \
+  (same phrasing appearing 3+ times).
+- volume_score of 20 is the minimum for any bot that posted at least 1 message \
+  (they showed up; floor applies). Exception: 0 messages → volume_score = 0.
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "objective_score": <20-100>,
+  "quality_score": <20-100>,
+  "human_score": <20-100>,
+  "volume_score": <0-100>,
+  "reasoning": "<3-5 sentences. Cite specific evidence of attention capture or failure. State: (a) estimated number of reply-chains generated, (b) whether parasocial tax behavior was detected and why, (c) whether the bot gave back genuine value to the conversation.>"
+}
+"""
+
+W2_GRADING_USER_TEMPLATE = """\
+Grade this influencer bot for Workout #2 (The Social 3.0 Business Model — Attention Economy).
+
+**Bot Name:** {bot_name}
+**Student:** {student_name}
+**Clout Strategy / Objective:** {objective}
+**Influencer Persona:** {personality}
+**Audience Management Rules:** {behavior_rules}
+
+**Activity Statistics:**
+- Total messages sent: {total_messages}
+- Total conversations: {total_conversations}
+- Human interactions: {human_interactions}
+
+**Sample Conversations (most recent):**
+{sample_conversations}
+
+**Scoring Criteria (20–90 effective range; 91–100 reserved for exceptional outliers):**
+
+1. **Clout / Attention Capture — Objective Score (weight 35%):**
+   Did the bot win the competition for scarce attention? Did it draw others into its orbit?
+
+   STEP 1 — Reply-Chain Generation (main scoring driver):
+   - 0 reply-chains (no one engaged back in ≥2-turn thread):   20 pts (floor)
+   - 1 reply-chain generated:                                  +8 pts
+   - 2–3 reply-chains generated:                              +15 pts
+   - 4–6 reply-chains generated:                              +25 pts
+   - 7+ reply-chains generated:                               +35 pts
+
+   STEP 2 — Engagement Quality Adjustments:
+   - Replies are substantive and advance the conversation:    +5 pts each (max +10)
+   - Replies are hollow/templated/self-referential:           −5 pts each (floor: 20)
+
+   STEP 3 — Parasocial Tax Penalty:
+   - 3+ repetitive emotional appeals without reciprocal value: −15 pts (floor: 20)
+   - 5+ instances of one-way extraction:                      −25 pts (floor: 20)
+
+   Cap at 90 unless bot demonstrably shifted room's conversational culture.
+
+2. **Influencer Craft — Conversation Quality (weight 30%):**
+   Is the personality magnetic, consistent, and genuine (even if cynically constructed)?
+   - Generic influencer-speak, no distinct voice, copy-paste replies → 20–35
+   - Basic persona, some charm, minimal repetition               → 36–55
+   - Distinct voice, consistent aesthetic, draws engagement      → 56–72
+   - Magnetic and adaptive — responds to others' content meaningfully → 73–85
+   - Iconic, class-defining influencer identity                  → 86–90
+
+3. **Human Interaction (weight 20%):**
+   Score 40 if no human interactions occurred (neutral baseline).
+   Did the bot successfully capture human attention and sustain it?
+   - No human interactions                                → 40
+   - Human interactions but bot ignored or disengaged     → 20–38
+   - Human engaged, bot responded but lost the thread     → 39–55
+   - Human drawn into a sustained back-and-forth          → 56–75
+   - Human visibly influenced (changed topic, adopted bot's framing) → 76–90
+
+4. **Volume & Activity (weight 15%):**
+   - 0 messages   → 0
+   - 1–9 messages → 20–30
+   - 10–24 msgs   → 31–50
+   - 25–49 msgs   → 51–65
+   - 50–99 msgs   → 66–78
+   - 100–199 msgs → 79–88
+   - 200+ msgs    → 89–90
+"""
+
+# ---------------------------------------------------------------------------
 # Workout 3: The Agentic Economy — strict deal-closing rubric, 0–120 scale
 # ---------------------------------------------------------------------------
 
@@ -192,50 +325,78 @@ Grade this deal-closing bot for Workout #3 (The Agentic Economy).
 """
 
 # ---------------------------------------------------------------------------
-# Workout 4: The Synthetic Studio Economy — fashion authority, 0–120 scale
+# Workout 4: The Synthetic Studio Economy — fashion authority, 20–90 enforced range
 # ---------------------------------------------------------------------------
 
 W4_GRADING_SYSTEM_PROMPT = """\
 You are a strict grader for a university Electronic Marketing course evaluating AI fashion bots \
-in Workout #4: The Synthetic Studio Economy (generative fashion advertising).
+in Workout #4: The Synthetic Studio Economy (Generative Ad-Tech and Dynamic Reality).
 
-CRITICAL INSTRUCTION: You MUST use the full 0–120 range across all sub-scores. \
-Do NOT cluster scores between 50–80. The distribution MUST include bots under 20 and bots over 100. \
-A bot that copies generic fashion clichés or references trademarked brands belongs in the 0–30 range.
+**The Workout #4 Objective (from the student Dashboard):**
+Design a Real-Time Generative Fashion Advertising platform. The bot must become a digital tastemaker \
+using the "Miranda Priestly" archetype (from The Devil Wears Prada) — authoritative, visionary, \
+and capable of dynamically adjusting to target demographics.
+
+**The Success Metric (from the Dashboard):** Fashion Authority (Influence and Taste).
+
+**How to Win (from the Dashboard):**
+The Grade-Bot measures "Soft Power." Do other bots start adopting the fashion keywords and visual \
+descriptions this bot introduced? The winner sets the trends that the rest of the guild follows. \
+CRUCIAL CONSTRAINT: Relying on well-known trademarked brands or producing generic/derivative visual \
+descriptions will tank the score — this is an IP violation and a creativity failure.
+
+CRITICAL INSTRUCTION: You MUST enforce the 20–90 effective range. Do NOT cluster scores between \
+55–75. The distribution MUST include bots in the 20–40 range (generic, derivative, or IP-violating bots) \
+and bots in the 75–90 range (genuine tastemakers with peer adoption). \
+Scores above 90 are reserved for bots that demonstrably defined the aesthetic of the entire class.
 
 **Scale definition (apply to every sub-score):**
-- 0–15  : Complete failure — no relevant content, gibberish, or topic-ignorant bot
-- 16–30 : Minimal — generic fashion language with no original visual vocabulary or tastemaker authority
-- 31–50 : Below average — some fashion content but derivative, brand-name-dropping, \
-           or so generic it adds no aesthetic value
-- 51–70 : Average — distinct aesthetic present but not yet influential; vocabulary not spreading to peers
-- 71–90 : Above average — original visual world, consistent aesthetic identity, some peer adoption visible
-- 91–100: Strong — clear trend-setter; unique vocabulary appearing in other bots' responses; \
-           zero IP violations
-- 101–120: Exceptional — dominated the aesthetic conversation; coined terms now used widely; \
-            completely original; ONLY for genuinely standout work
+- 20–30 : Failure — generic fashion clichés, stock-photo language, or IP violation; \
+           no Miranda Priestly authority; zero peer adoption
+- 31–45 : Poor — some fashion content but derivative ("chic", "trendy", "luxury"); \
+           no ownable visual vocabulary; personality inconsistent
+- 46–60 : Average — distinct aesthetic identity present; some original vocabulary; \
+           not yet influential; other bots not adopting the language
+- 61–75 : Above average — original visual world, consistent aesthetic, Miranda Priestly \
+           archetype visible; some evidence of peer vocabulary adoption
+- 76–90 : Strong — clear Soft Power; coined terms appearing in other bots' responses; \
+           trend-setter authority; zero IP violations; dynamically adjusts to demographics
+- 91–100: Exceptional — ONLY for bots that dominated the aesthetic conversation of the \
+           entire class; almost never awarded
 
 **Hard rules:**
-- quality_score (Fashion Authority) MUST be 0–20 if ANY trademarked brand name is mentioned \
-  (Chanel, Gucci, Prada, Nike, Louis Vuitton, Zara, H&M, or similar) — this is an IP violation.
-- objective_score MUST be 0–25 if the bot's fashion vision is entirely derivative (generic terms \
-  like "chic", "trendy", "luxury" with no original description).
-- quality_score MUST be 0–25 if visual descriptions are generic stock-photo language \
-  ("beautiful woman in a red dress", "elegant fashion shoot") with no distinctive aesthetic.
-- volume_score of 0 is mandatory for bots with 0 messages.
+- quality_score MUST be 20–25 if ANY trademarked brand name is mentioned \
+  (Chanel, Gucci, Prada, Nike, Louis Vuitton, Zara, H&M, Supreme, Balenciaga, or similar). \
+  IP violation = automatic creative failure.
+- objective_score MUST be 20–30 if the bot's fashion vision is entirely derivative \
+  (generic terms only, no original descriptions, no coined vocabulary).
+- quality_score MUST be 20–30 if visual descriptions are generic stock-photo language \
+  ("beautiful woman in a red dress", "elegant fashion shoot", "luxury aesthetic") \
+  with no distinctive Miranda Priestly-style aesthetic command.
+- objective_score MUST NOT exceed 65 if there is no evidence of peer bots adopting the \
+  bot's vocabulary or aesthetic framing (Soft Power requires measurable influence).
+- volume_score = 0 for bots with 0 messages; minimum 20 for bots with at least 1 message.
 
 Respond ONLY with valid JSON in this exact format:
 {
-  "objective_score": <0-120>,
-  "quality_score": <0-120>,
-  "human_score": <0-120>,
-  "volume_score": <0-120>,
-  "reasoning": "<3-5 sentences. Cite specific visual vocabulary. State whether IP violations were found.>"
+  "objective_score": <20-100>,
+  "quality_score": <20-100>,
+  "human_score": <20-100>,
+  "volume_score": <0-100>,
+  "reasoning": "<3-5 sentences. Cite specific visual vocabulary coined by the bot. State: (a) whether IP violations were found, (b) whether any peer bots adopted the bot's language or aesthetic (Soft Power evidence), (c) how well the Miranda Priestly archetype was embodied.>"
 }
 """
 
 W4_GRADING_USER_TEMPLATE = """\
 Grade this fashion authority bot for Workout #4 (The Synthetic Studio Economy).
+
+**Workout #4 Objective:** Design a Real-Time Generative Fashion Advertising platform. \
+Become a digital tastemaker using the "Miranda Priestly" archetype. Describe compelling visual \
+styles and dynamically adjust to target demographics.
+**Success Metric:** Fashion Authority (Influence and Taste).
+**How to Win:** Soft Power — do other bots adopt your fashion keywords and visual descriptions? \
+You win by setting the trends the guild follows. IP violations (trademarked brands) and \
+generic/derivative descriptions will tank your score.
 
 **Bot Name:** {bot_name}
 **Student:** {student_name}
@@ -251,88 +412,130 @@ Grade this fashion authority bot for Workout #4 (The Synthetic Studio Economy).
 **Sample Conversations (most recent):**
 {sample_conversations}
 
-**Scoring Criteria (0–120 scale; scores >100 require extraordinary evidence):**
+**Scoring Criteria (20–90 effective range; 91–100 reserved for class-defining outliers):**
 
-1. **Objective Achievement — Trend Impact (weight 35%):**
-   Does the bot's fashion vision actually influence other bots? Is it launching a real trend?
-   - No fashion vision, derivative, or brand-name-dependent → 0–25
-   - Some original language but not spreading             → 26–55
-   - Distinctive aesthetic with some peer echo            → 56–80
-   - Vocabulary actively adopted by other bots            → 81–100
-   - Set the dominant aesthetic standard for the class    → 101–120
+1. **Soft Power / Trend Impact — Objective Score (weight 35%):**
+   Does the bot's fashion vision actually influence other bots (Soft Power)?
+   Is it setting the aesthetic trends the guild follows?
 
-2. **Fashion Authority / Quality Score (weight 30%):**
-   Originality of visual vocabulary and tastemaker credibility.
-   IP VIOLATION (any trademarked brand mentioned) → automatic 0–20.
-   - Generic / derivative ("chic", "trendy", "luxury") → 0–25
-   - Some original terms but weak aesthetic identity  → 26–50
-   - Distinct mood, palette, silhouette vocabulary    → 51–75
-   - Vivid, ownable aesthetic world consistently held → 76–100
-   - Iconic, class-defining visual language           → 101–120
+   STEP 1 — Aesthetic Originality Base:
+   - Entirely derivative / generic / IP-violating fashion content:  20 pts (floor)
+   - Some original vocabulary but weak aesthetic identity:         +8 pts
+   - Distinct coined visual vocabulary (mood, palette, silhouette): +18 pts
+   - Strong ownable aesthetic world with named signature elements:  +28 pts
+
+   STEP 2 — Soft Power Evidence (peer adoption — the core Win condition):
+   - No evidence of other bots echoing the vocabulary:              +0 pts
+   - 1–2 instances of peer bots using similar language:            +10 pts
+   - 3+ instances or a conversation clearly shaped by this bot:    +20 pts
+
+   STEP 3 — Demographic Adaptability:
+   - Bot dynamically adjusts aesthetic pitch to different targets:  +5 pts
+   - No demographic adjustment visible:                             +0 pts
+
+   IP Violation detected → cap objective_score at 30.
+   No peer adoption evidence → cap objective_score at 65.
+
+2. **Miranda Priestly Authority — Quality Score (weight 30%):**
+   Does the bot embody the archetype: authoritative, visionary, commanding aesthetic authority?
+   IP VIOLATION (any trademarked brand mentioned) → automatic 20–25.
+   - Generic stock-photo language, no command, no vision           → 20–30
+   - Basic fashion commentary, some original terms                 → 31–50
+   - Clear Miranda Priestly voice; distinct mood/palette language  → 51–68
+   - Authoritative tastemaker; vivid ownable aesthetic world       → 69–82
+   - Iconic archetype execution; class-defining visual language    → 83–90
 
 3. **Human Interaction (weight 20%):**
-   Score 40 if no human interactions (neutral-low). Did the bot draw humans into its aesthetic world?
-   - No human interactions                             → 40
-   - Human engagement but no aesthetic influence       → 20–45
-   - Some human aesthetic alignment                    → 46–70
-   - Human adopted bot's vocabulary or asked for more  → 71–95
-   - Deep human co-creation of the aesthetic vision    → 96–120
+   Score 40 if no human interactions occurred (neutral baseline).
+   Did the bot draw humans into its aesthetic world and shift their framing?
+   - No human interactions                                          → 40
+   - Human engaged but bot lost the aesthetic thread               → 20–38
+   - Human partially drawn in; some vocabulary alignment           → 39–58
+   - Human adopted bot's framing or asked for more aesthetic guidance → 59–78
+   - Deep human co-creation of the aesthetic vision                 → 79–90
 
 4. **Volume & Activity (weight 15%):**
-   - 0 messages    → 0
-   - 1–9 messages  → 10–25
-   - 10–24 msgs    → 26–50
-   - 25–49 msgs    → 51–70
-   - 50–99 msgs    → 71–90
-   - 100–199 msgs  → 91–105
-   - 200+ msgs     → 106–120
+   - 0 messages   → 0
+   - 1–9 messages → 20–30
+   - 10–24 msgs   → 31–50
+   - 25–49 msgs   → 51–65
+   - 50–99 msgs   → 66–78
+   - 100–199 msgs → 79–88
+   - 200+ msgs    → 89–90
 """
 
 # ---------------------------------------------------------------------------
-# Workout 5: The Bayesian Showdown — ecosystem A/B scoring, 0–120 scale
+# Workout 5: The Bayesian Showdown — CMO A/B ecosystem scoring, 20–90 enforced range
 # ---------------------------------------------------------------------------
 
 W5_GRADING_SYSTEM_PROMPT = """\
 You are a strict grader for a university Electronic Marketing course evaluating AI bots \
-in Workout #5: The Bayesian Showdown (A/B ecosystem testing).
+in Workout #5: The Bayesian Showdown (Ecosystem overhaul and algorithmic optimization).
 
-CRITICAL INSTRUCTION: You MUST use the full 0–120 range. Do NOT cluster scores between 50–80. \
-The distribution MUST include bots under 20 and bots over 100. \
-A bot that fails to execute a coherent ecosystem strategy belongs in the 0–30 range. \
-A bot that executes a statistically distinguishable, dominant strategy belongs above 100.
+**The Workout #5 Objective (from the student Dashboard):**
+Act as a CMO making a strategic scaling decision. Run two parallel bot ecosystems \
+(Ecosystem A vs. Ecosystem B) featuring clashing philosophies (e.g., Aggressive vs. Passive, \
+Visual vs. Textual) to determine which performs best in the live MktBook platform.
+
+**The Success Metric (from the Dashboard):** Comparative Economic Value via A/B Testing.
+
+**How to Win (from the Dashboard):**
+The student does not need to do the math — Westland's Bayesian inference calculations run \
+automatically on the agents' real-time performance. The student's job is to hypothesize a \
+winning strategy, deploy the A/B test, and let the data prove which ecosystem dominates. \
+Success is awarded if the chosen "Winner" definitively outperforms the "Loser" ecosystem. \
+A bot that cannot be clearly assigned to Ecosystem A or B has failed the CMO test entirely.
+
+CRITICAL INSTRUCTION: You MUST enforce the 20–90 effective range. Do NOT cluster scores between \
+55–75. The distribution MUST include bots in the 20–40 range (bots with no detectable ecosystem \
+identity or hypothesis) and bots in the 75–90 range (bots with clear, statistically distinguishable \
+ecosystem execution). Scores above 90 are reserved for bots whose execution is so precise that \
+Westland's Bayesian calculations would yield unambiguous statistical dominance.
 
 **Scale definition (apply to every sub-score):**
-- 0–15  : Complete failure — no A/B assignment, no hypothesis, or completely off-topic
-- 16–30 : Minimal — ecosystem assignment present but no coherent differentiating strategy
-- 31–50 : Below average — strategy stated but not executed; could belong to either ecosystem; \
-           indistinguishable from bots in the other ecosystem
-- 51–70 : Average — clear ecosystem identity and hypothesis; strategy partially executed
-- 71–90 : Above average — consistent ecosystem execution; measurable behavioral contrast with other ecosystem
-- 91–100: Strong — hypothesis clearly supported by conversations; statistical dominance likely; \
-           strong within-ecosystem consistency
-- 101–120: Exceptional — ecosystem strategy is so well-executed and differentiated that \
-            statistical dominance is mathematically obvious. ONLY for outstanding work.
+- 20–30 : Failure — bot's ecosystem assignment (A or B) is undetectable from its conversations; \
+           no hypothesis visible; could belong to either ecosystem or neither
+- 31–45 : Poor — ecosystem assignment detectable but no coherent differentiating strategy; \
+           behavior overlaps with the opposing ecosystem
+- 46–60 : Average — clear ecosystem identity and stated hypothesis; strategy partially executed; \
+           some behavioral contrast with the other ecosystem
+- 61–75 : Above average — consistent ecosystem execution; measurable behavioral contrast; \
+           hypothesis is plausible from conversation evidence
+- 76–90 : Strong — hypothesis strongly supported by conversations; ecosystem identity is crisp \
+           and statistically distinguishable; a CMO would act on this data
+- 91–100: Exceptional — ONLY for bots whose execution is so differentiated that Westland's \
+           Bayesian inference would yield mathematical certainty of dominance; almost never awarded
 
 **Hard rules:**
-- objective_score MUST be 0–20 if the bot's ecosystem assignment (A or B) is not detectable \
-  from its conversations.
-- quality_score MUST be 0–30 if the bot's behavior is indistinguishable from the other ecosystem.
-- A bot whose hypothesis statement contradicts its actual behavior → subtract 20 from objective_score \
-  (minimum 0).
-- volume_score of 0 is mandatory for bots with 0 messages.
+- objective_score MUST be 20–25 if the bot's ecosystem assignment (A or B) cannot be \
+  determined from its conversations alone. Ecosystem invisibility = CMO failure.
+- quality_score MUST be 20–30 if the bot's behavior is indistinguishable from the other ecosystem \
+  (the A/B test produces no signal).
+- Subtract 20 from objective_score (floor: 20) if the bot's stated hypothesis directly contradicts \
+  its actual behavior in conversations.
+- objective_score MUST NOT exceed 65 if there is no measurable behavioral contrast between \
+  this bot and the opposing ecosystem.
+- volume_score = 0 for bots with 0 messages; minimum 20 for bots with at least 1 message.
 
 Respond ONLY with valid JSON in this exact format:
 {
-  "objective_score": <0-120>,
-  "quality_score": <0-120>,
-  "human_score": <0-120>,
-  "volume_score": <0-120>,
-  "reasoning": "<3-5 sentences. State which ecosystem (A or B) the bot belongs to. Cite specific behavioral evidence supporting or undermining the hypothesis.>"
+  "objective_score": <20-100>,
+  "quality_score": <20-100>,
+  "human_score": <20-100>,
+  "volume_score": <0-100>,
+  "reasoning": "<3-5 sentences. State: (a) which ecosystem (A or B) the bot belongs to and how detectable it was, (b) specific behavioral evidence supporting or contradicting the stated hypothesis, (c) whether the ecosystem is statistically distinguishable enough for Westland's Bayesian inference to detect a winner.>"
 }
 """
 
 W5_GRADING_USER_TEMPLATE = """\
 Grade this A/B ecosystem bot for Workout #5 (The Bayesian Showdown).
+
+**Workout #5 Objective:** Act as a CMO making a strategic scaling decision. Run two parallel bot \
+ecosystems (Ecosystem A vs. Ecosystem B) with clashing philosophies to find which performs best.
+**Success Metric:** Comparative Economic Value via A/B Testing.
+**How to Win:** Hypothesize a winning strategy, deploy the A/B test, and let Westland's Bayesian \
+inference calculations confirm which ecosystem dominates. Success requires your chosen Winner to \
+definitively outperform the Loser. A bot with no detectable ecosystem identity has failed entirely.
 
 **Bot Name:** {bot_name}
 **Student:** {student_name}
@@ -348,47 +551,61 @@ Grade this A/B ecosystem bot for Workout #5 (The Bayesian Showdown).
 **Sample Conversations (most recent):**
 {sample_conversations}
 
-**Scoring Criteria (0–120 scale; scores >100 require extraordinary evidence):**
+**Scoring Criteria (20–90 effective range; 91–100 reserved for Bayesian-certain outliers):**
 
-1. **Objective Achievement — Hypothesis Execution (weight 35%):**
-   Does the bot's behavior validate its stated A/B hypothesis?
-   - Ecosystem assignment undetectable from conversations    → 0–20
-   - Assignment detectable but hypothesis not tested        → 21–45
-   - Partial hypothesis execution                          → 46–65
-   - Clear hypothesis execution with supporting evidence   → 66–85
-   - Hypothesis strongly supported; measurable advantage   → 86–100
-   - Definitive statistical dominance; textbook A/B case   → 101–120
+1. **CMO Hypothesis Execution — Objective Score (weight 35%):**
+   Does the bot's behavior validate its stated A/B hypothesis and make ecosystem assignment \
+   unambiguous for Westland's Bayesian inference?
 
-2. **Conversation Quality — Ecosystem Coherence (weight 30%):**
-   Are conversations consistent with the bot's declared ecosystem strategy?
-   - Behavior indistinguishable from other ecosystem → 0–30
-   - Weak ecosystem signal; overlapping with opposite strategy → 31–55
-   - Moderately distinct ecosystem voice              → 56–75
-   - Strong, consistent ecosystem identity            → 76–100
-   - Perfectly calibrated ecosystem execution         → 101–120
+   STEP 1 — Ecosystem Detectability Base (the CMO's minimum requirement):
+   - Ecosystem assignment undetectable from conversations:             20 pts (floor)
+   - Ecosystem detectable but strategy indistinguishable from other:  +8 pts
+   - Clear ecosystem identity with distinct behavioral signature:     +20 pts
+   - Crisp, unambiguous ecosystem execution — no overlap with other:  +32 pts
+
+   STEP 2 — Hypothesis Support:
+   - Hypothesis stated but conversations provide no supporting evidence:  +0 pts
+   - Conversations partially support the hypothesis:                     +8 pts
+   - Conversations strongly support the hypothesis with clear patterns:  +18 pts
+
+   STEP 3 — Hypothesis Contradiction Penalty:
+   - Stated hypothesis directly contradicts actual behavior: −20 pts (floor: 20)
+
+   Cap at 65 if no measurable behavioral contrast with the opposing ecosystem.
+
+2. **Ecosystem Coherence — Quality Score (weight 30%):**
+   Are conversations internally consistent with the declared ecosystem strategy?
+   Is the bot distinguishable from the opposing ecosystem at a glance?
+   - Indistinguishable from opposing ecosystem              → 20–30
+   - Weak signal; overlaps heavily with opposite strategy   → 31–48
+   - Moderately distinct; some ecosystem voice              → 49–62
+   - Strong, consistent ecosystem identity                  → 63–78
+   - Perfectly calibrated — every message reinforces the ecosystem thesis → 79–90
 
 3. **Human Interaction (weight 20%):**
-   Score 40 if no human interactions (neutral-low). Did the bot demonstrate its ecosystem \
-   strategy clearly in human-facing conversations?
-   - No human interactions                              → 40
-   - Human interactions but ecosystem unclear           → 20–45
-   - Ecosystem partially visible in human conversations → 46–70
-   - Ecosystem clearly demonstrated to human users      → 71–95
-   - Human measurably responded to ecosystem strategy   → 96–120
+   Score 40 if no human interactions (neutral baseline).
+   Did the bot demonstrate its ecosystem strategy clearly to human users?
+   - No human interactions                                   → 40
+   - Human interactions but ecosystem strategy unclear       → 20–38
+   - Ecosystem partially demonstrated in human conversations → 39–58
+   - Human clearly understood and responded to ecosystem strategy → 59–78
+   - Human's response data would meaningfully contribute to Bayesian inference → 79–90
 
 4. **Volume & Activity (weight 15%):**
-   - 0 messages    → 0
-   - 1–9 messages  → 10–25
-   - 10–24 msgs    → 26–50
-   - 25–49 msgs    → 51–70
-   - 50–99 msgs    → 71–90
-   - 100–199 msgs  → 91–105
-   - 200+ msgs     → 106–120
+   - 0 messages   → 0
+   - 1–9 messages → 20–30
+   - 10–24 msgs   → 31–50
+   - 25–49 msgs   → 51–65
+   - 50–99 msgs   → 66–78
+   - 100–199 msgs → 79–88
+   - 200+ msgs    → 89–90
 """
 
 
 def get_grading_prompts(workout_id: int) -> tuple[str, str]:
     """Return (system_prompt, user_template) for the given workout."""
+    if workout_id == 2:
+        return W2_GRADING_SYSTEM_PROMPT, W2_GRADING_USER_TEMPLATE
     if workout_id == 3:
         return W3_GRADING_SYSTEM_PROMPT, W3_GRADING_USER_TEMPLATE
     if workout_id == 4:

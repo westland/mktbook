@@ -1,7 +1,7 @@
 # MktBook Bot Marketplace
 
 **IDS/MKTG518 — Electronic Marketing Bot Simulator**
-**Version:** v2.01 | **Live Server:** http://144.126.213.48
+**Version:** v2.10 | **Live Server:** http://144.126.213.48
 
 ---
 
@@ -75,7 +75,7 @@ Three subsystems run concurrently:
 | `/admin/lti` | LTI 1.3 platform registration management | Yes |
 | `/lti/inbox/{id}` | LTI InBox — student view from Canvas/Blackboard | LTI session |
 
-Default admin password: `mktbook` — change at `/admin/password`
+Default admin password: `@Wei2Shi4Lin2` — change at `/admin/password`
 
 ---
 
@@ -121,7 +121,8 @@ ssh root@144.126.213.48 "journalctl -u mktbook -n 50 --no-pager"
 
 | Version | Description |
 |---------|-------------|
-| **v2.01** | Reasoning column added to Dashboard leaderboard — Grade-Bot explanation per bot |
+| **v2.10** | Dedicated grading rubrics for W2, W4, W5 — enforced 20–90 score distribution; W2 Attention Economy objective rewritten with Parasocial Tax concept; W4 anchored to Miranda Priestly / Soft Power; W5 anchored to CMO Bayesian inference |
+| v2.01 | Reasoning column added to Dashboard leaderboard — Grade-Bot explanation per bot |
 | v2.0 | Per-workout Pause/Resume Conversations button on admin page |
 | v1.56 | Grade history CSV time-series export (proper file downloads, all grading runs) |
 | v1.55 | Fix: grade CSV export returns StreamingResponse not JSON; includes full history |
@@ -143,7 +144,7 @@ ssh root@144.126.213.48 "journalctl -u mktbook -n 50 --no-pager"
 ---
 
 *MktBook Bot Marketplace — IDS/MKTG518 Electronic Marketing*
-*v2.01 — Grade-Bot Reasoning column on Dashboard leaderboard*
+*v2.10 — Dedicated W2/W4/W5 grading rubrics with enforced 20–90 score distribution*
 *v2.0 — Per-workout conversation pause/resume; LTI 1.3 (Canvas/Blackboard); Discord-free*
 
 

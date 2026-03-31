@@ -7,7 +7,7 @@ import random
 from typing import TYPE_CHECKING
 
 from mktbook.bots.conversation import build_conversation_messages
-from mktbook.bots.image_gen import extract_image_prompt, generate_image
+from mktbook.bots.image_gen import extract_image_prompt, generate_image, w4_image_gate
 from mktbook.config import settings
 from mktbook.db import queries
 from mktbook.scheduler.pairing import select_pair
@@ -26,6 +26,18 @@ class ConversationScheduler:
         self.fleet = fleet
         self.ws = ws
         self._running = False
+        self._paused_workouts: set[int] = set()
+
+    def pause_workout(self, workout_id: int) -> None:
+        self._paused_workouts.add(workout_id)
+        log.info("Conversations paused for workout %d", workout_id)
+
+    def resume_workout(self, workout_id: int) -> None:
+        self._paused_workouts.discard(workout_id)
+        log.info("Conversations resumed for workout %d", workout_id)
+
+    def is_paused(self, workout_id: int) -> bool:
+        return workout_id in self._paused_workouts
 
     async def run(self) -> None:
         self._running = True
@@ -45,8 +57,11 @@ class ConversationScheduler:
             for b in active:
                 by_workout.setdefault(b.bot_row.workout_id, []).append(b)
 
-            # Only consider workouts that have at least 2 active bots
-            eligible = {wid: bots for wid, bots in by_workout.items() if len(bots) >= 2}
+            # Only consider workouts that have at least 2 active bots and are not paused
+            eligible = {
+                wid: bots for wid, bots in by_workout.items()
+                if len(bots) >= 2 and wid not in self._paused_workouts
+            }
             if not eligible:
                 continue
 
@@ -112,8 +127,12 @@ class ConversationScheduler:
             await initiator.send_to_marketplace(init_raw)
 
             if is_studio:
-                init_text, init_image_prompt = extract_image_prompt(init_raw)
-                init_image_url = await generate_image(init_image_prompt) if init_image_prompt else None
+                init_text, _init_prompt = extract_image_prompt(init_raw)
+                if _init_prompt and w4_image_gate.should_trigger():
+                    init_image_prompt = _init_prompt
+                    init_image_url = await generate_image(init_image_prompt)
+                else:
+                    init_image_prompt, init_image_url = None, None
             else:
                 init_text, init_image_prompt, init_image_url = init_raw, None, None
 
@@ -149,8 +168,12 @@ class ConversationScheduler:
             await responder.send_to_marketplace(resp_raw)
 
             if is_studio:
-                resp_text, resp_image_prompt = extract_image_prompt(resp_raw)
-                resp_image_url = await generate_image(resp_image_prompt) if resp_image_prompt else None
+                resp_text, _resp_prompt = extract_image_prompt(resp_raw)
+                if _resp_prompt and w4_image_gate.should_trigger():
+                    resp_image_prompt = _resp_prompt
+                    resp_image_url = await generate_image(resp_image_prompt)
+                else:
+                    resp_image_prompt, resp_image_url = None, None
             else:
                 resp_text, resp_image_prompt, resp_image_url = resp_raw, None, None
 

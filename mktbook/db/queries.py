@@ -161,6 +161,8 @@ async def delete_bot(bot_id: int) -> None:
         "DELETE FROM conversation_pairs WHERE bot_a_id = ? OR bot_b_id = ?",
         (bot_id, bot_id),
     )
+    # lti_user_bots.bot_id has FK → bots.id, must delete before the bot row
+    await db.execute("DELETE FROM lti_user_bots WHERE bot_id = ?", (bot_id,))
     await db.execute("DELETE FROM bots WHERE id = ?", (bot_id,))
     await db.commit()
 
@@ -257,21 +259,35 @@ async def get_messages(limit: int = 100, bot_id: int | None = None) -> list[Mess
     return [_row_to_message(r) for r in rows]
 
 
-async def get_messages_for_workout(workout_id: int, limit: int = 500) -> list[Message]:
+async def get_messages_for_workout(workout_id: int, limit: int | None = None) -> list[Message]:
     """Return all messages (bot + human) scoped to a specific workout."""
     db = await get_db()
-    rows = await (await db.execute(
-        """SELECT DISTINCT m.* FROM messages m
-           LEFT JOIN bots b ON m.bot_id = b.id
-           WHERE b.workout_id = ?
-              OR (m.author_type = 'human' AND m.conversation_id IN (
-                    SELECT c.id FROM conversations c
-                    JOIN bots b2 ON (b2.id = c.initiator_bot_id OR b2.id = c.responder_bot_id)
-                    WHERE b2.workout_id = ?
-                  ))
-           ORDER BY m.created_at DESC LIMIT ?""",
-        (workout_id, workout_id, limit),
-    )).fetchall()
+    if limit is not None:
+        rows = await (await db.execute(
+            """SELECT DISTINCT m.* FROM messages m
+               LEFT JOIN bots b ON m.bot_id = b.id
+               WHERE b.workout_id = ?
+                  OR (m.author_type = 'human' AND m.conversation_id IN (
+                        SELECT c.id FROM conversations c
+                        JOIN bots b2 ON (b2.id = c.initiator_bot_id OR b2.id = c.responder_bot_id)
+                        WHERE b2.workout_id = ?
+                      ))
+               ORDER BY m.created_at DESC LIMIT ?""",
+            (workout_id, workout_id, limit),
+        )).fetchall()
+    else:
+        rows = await (await db.execute(
+            """SELECT DISTINCT m.* FROM messages m
+               LEFT JOIN bots b ON m.bot_id = b.id
+               WHERE b.workout_id = ?
+                  OR (m.author_type = 'human' AND m.conversation_id IN (
+                        SELECT c.id FROM conversations c
+                        JOIN bots b2 ON (b2.id = c.initiator_bot_id OR b2.id = c.responder_bot_id)
+                        WHERE b2.workout_id = ?
+                      ))
+               ORDER BY m.created_at ASC""",
+            (workout_id, workout_id),
+        )).fetchall()
     return [_row_to_message(r) for r in rows]
 
 
@@ -368,6 +384,32 @@ async def get_grades_by_run(grading_run_id: str) -> list[Grade]:
     return [_row_to_grade(r) for r in rows]
 
 
+async def get_grades_for_workout(workout_id: int) -> list[dict]:
+    """Return all grade records for a workout, joined with bot info, newest first."""
+    db = await get_db()
+    rows = await (await db.execute(
+        """SELECT g.*, b.student_name, b.bot_name, b.workout_id
+           FROM grades g
+           INNER JOIN bots b ON g.bot_id = b.id
+           WHERE b.workout_id = ?
+           ORDER BY g.created_at DESC""",
+        (workout_id,),
+    )).fetchall()
+    return [dict(r) for r in rows]
+
+
+async def get_all_grades_history() -> list[dict]:
+    """Return ALL grade records across all workouts, joined with bot info, newest first."""
+    db = await get_db()
+    rows = await (await db.execute(
+        """SELECT g.*, b.student_name, b.bot_name, b.workout_id
+           FROM grades g
+           INNER JOIN bots b ON g.bot_id = b.id
+           ORDER BY g.created_at DESC"""
+    )).fetchall()
+    return [dict(r) for r in rows]
+
+
 # ── Admin / Reset ─────────────────────────────────────────────────────
 
 async def get_workout_stats(workout_id: int) -> dict[str, int]:
@@ -409,7 +451,25 @@ async def reset_conversations_for_workout(workout_id: int) -> dict[str, int]:
         return {"messages": 0, "conversations": 0, "grades": 0}
 
     ph = ",".join("?" * len(bot_ids))
-    r1 = await db.execute(f"DELETE FROM messages WHERE bot_id IN ({ph})", bot_ids)
+
+    # Get all conversation IDs involving these bots (same approach as delete_bot)
+    conv_rows = await (await db.execute(
+        f"SELECT id FROM conversations WHERE initiator_bot_id IN ({ph}) OR responder_bot_id IN ({ph})",
+        bot_ids + bot_ids,
+    )).fetchall()
+    conv_ids = [r["id"] for r in conv_rows]
+
+    # Delete ALL messages in those conversations (bot AND human messages)
+    msg_count = 0
+    if conv_ids:
+        cph = ",".join("?" * len(conv_ids))
+        r1 = await db.execute(f"DELETE FROM messages WHERE conversation_id IN ({cph})", conv_ids)
+        msg_count += r1.rowcount
+    # Also remove any orphan bot messages not attached to a conversation
+    r1b = await db.execute(f"DELETE FROM messages WHERE bot_id IN ({ph})", bot_ids)
+    msg_count += r1b.rowcount
+
+    # Now safe to delete conversations (no messages reference them)
     r2 = await db.execute(
         f"DELETE FROM conversations WHERE initiator_bot_id IN ({ph}) OR responder_bot_id IN ({ph})",
         bot_ids + bot_ids,
@@ -420,13 +480,21 @@ async def reset_conversations_for_workout(workout_id: int) -> dict[str, int]:
         bot_ids + bot_ids,
     )
     await db.commit()
-    return {"messages": r1.rowcount, "conversations": r2.rowcount, "grades": r3.rowcount}
+    return {"messages": msg_count, "conversations": r2.rowcount, "grades": r3.rowcount}
 
 
 async def reset_bots_for_workout(workout_id: int) -> dict[str, int]:
     """Delete all bots AND their conversations/messages/grades for a workout."""
     counts = await reset_conversations_for_workout(workout_id)
     db = await get_db()
+    # lti_user_bots.bot_id has FK → bots.id; must delete before bots
+    bot_rows = await (await db.execute(
+        "SELECT id FROM bots WHERE workout_id = ?", (workout_id,)
+    )).fetchall()
+    bot_ids = [r["id"] for r in bot_rows]
+    if bot_ids:
+        ph = ",".join("?" * len(bot_ids))
+        await db.execute(f"DELETE FROM lti_user_bots WHERE bot_id IN ({ph})", bot_ids)
     r = await db.execute("DELETE FROM bots WHERE workout_id = ?", (workout_id,))
     counts["bots"] = r.rowcount
     await db.commit()
@@ -448,6 +516,7 @@ async def reset_all() -> dict[str, int]:
     """Nuclear option — delete everything: all bots and all conversation data."""
     counts = await reset_all_conversations()
     db = await get_db()
+    await db.execute("DELETE FROM lti_user_bots")
     r = await db.execute("DELETE FROM bots")
     counts["bots"] = r.rowcount
     await db.commit()
@@ -473,3 +542,41 @@ async def get_bot_stats(bot_id: int) -> dict[str, int]:
         (bot_id, bot_id),
     )).fetchone())["c"]
     return {"messages": msg_count, "conversations": conv_count, "human_interactions": human_count}
+
+
+# ── Auto-grade settings ────────────────────────────────────────────────
+
+async def get_all_auto_grade_settings() -> list[dict]:
+    db = await get_db()
+    rows = await (await db.execute(
+        "SELECT workout_id, interval_hours FROM auto_grade_settings ORDER BY workout_id"
+    )).fetchall()
+    return [{"workout_id": r["workout_id"], "interval_hours": r["interval_hours"]} for r in rows]
+
+
+async def get_auto_grade_setting(workout_id: int) -> int | None:
+    """Return interval_hours for a workout, or None if not set."""
+    db = await get_db()
+    row = await (await db.execute(
+        "SELECT interval_hours FROM auto_grade_settings WHERE workout_id = ?", (workout_id,)
+    )).fetchone()
+    return row["interval_hours"] if row else None
+
+
+async def set_auto_grade_setting(workout_id: int, interval_hours: int) -> None:
+    db = await get_db()
+    await db.execute(
+        """INSERT INTO auto_grade_settings (workout_id, interval_hours, updated_at)
+           VALUES (?, ?, datetime('now'))
+           ON CONFLICT(workout_id) DO UPDATE SET
+               interval_hours = excluded.interval_hours,
+               updated_at     = excluded.updated_at""",
+        (workout_id, interval_hours),
+    )
+    await db.commit()
+
+
+async def delete_auto_grade_setting(workout_id: int) -> None:
+    db = await get_db()
+    await db.execute("DELETE FROM auto_grade_settings WHERE workout_id = ?", (workout_id,))
+    await db.commit()

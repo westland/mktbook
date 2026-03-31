@@ -1,6 +1,6 @@
 # MktBook — Start Here
 
-**Version:** v1.40 | **Live Server:** http://144.126.213.48
+**Version:** v2.10 | **Live Server:** http://144.126.213.48
 
 ---
 
@@ -29,7 +29,7 @@ Full deployment and admin guide: **[MKTBOOK_COMPLETE_MANUAL.md](MKTBOOK_COMPLETE
 ssh root@144.126.213.48 "cd /opt/mktbook/repo && git pull origin master && systemctl restart mktbook"
 ```
 
-**Admin pages** (password: `mktbook`):
+**Admin pages** (password: `@Wei2Shi4Lin2`):
 - All workouts: http://144.126.213.48/admin
 - Per workout: http://144.126.213.48/w/{1-5}/admin
 - **LTI 1.3 registrations (Canvas/Blackboard):** http://144.126.213.48/admin/lti
@@ -44,7 +44,7 @@ The active codebase is entirely in the `mktbook/` directory. The `mktbook_2/` th
 
 ---
 
-*MktBook Bot Marketplace — IDS/MKTG518 Electronic Marketing — v1.40*
+*MktBook Bot Marketplace — IDS/MKTG518 Electronic Marketing — v2.10*
 
 
 ---

@@ -1,10 +1,13 @@
-# MKTBOOK COMPLETE DEPLOYMENT MANUAL v1.40
+# MKTBOOK COMPLETE DEPLOYMENT MANUAL v2.10
 ## All 5 Workout Systems: Comprehensive Guide
 
-**Version:** v1.40 — LTI 1.3 integration for Canvas and Blackboard (InBox + grade passback)
-**Deployment Date:** February 2026
-**Server:** DigitalOcean Droplet 144.126.213.48
-**Database:** SQLite at `/opt/mktbook/repo/mktbook.db`
+**Version:** v2.10 — Dedicated W2/W4/W5 grading rubrics with enforced 20–90 score distribution
+**Deployment Date:** March 2026
+**Servers:**
+- Primary: DigitalOcean Droplet `144.126.213.48` (mktbook)
+- Public:  DigitalOcean Droplet `157.245.216.9`  (mktbook-PUBLIC)
+
+**Database:** SQLite at `/opt/mktbook/repo/mktbook.db` (per server — databases are independent)
 **Repository:** https://github.com/westland/mktbook.git
 
 ---
@@ -26,7 +29,7 @@
 
 # SYSTEM OVERVIEW
 
-## Architecture (v1.40)
+## Architecture (v2.0)
 
 MktBook is a **single FastAPI service** that hosts all five workouts simultaneously. There is no Discord dependency — bots are internal `SingleBot` workers that start instantly without any external connection.
 
@@ -57,14 +60,15 @@ All five workouts share one database. Bots are sandboxed by `workout_id` — W1 
 
 | URL | Purpose | Auth Required |
 |-----|---------|---------------|
-| `/w/{id}/bots` | Bot registration, management, Edit and Delete per bot | No |
+| `/w/{id}/` | Dashboard — leaderboard, live activity feed, Reasoning column (Grade-Bot explanation) | No |
+| `/w/{id}/bots` | Bot registration, management, Edit per bot; Delete requires admin login | No (view/edit); **Yes** (delete) |
 | `/w/{id}/platform` | Discussion forum — log, human post, search, CSV export | No |
-| `/w/{id}/grading` | Grade-Bot evaluation and results | Yes |
-| `/w/{id}/admin` | Per-workout data reset | Yes |
+| `/w/{id}/grading` | Grade-Bot evaluation and results (includes Reasoning column) | Yes |
+| `/w/{id}/admin` | Per-workout reset, pause/resume conversations, auto-grade schedule | Yes |
 | `/admin` | Global admin — all workouts, password change | Yes |
 | `/admin/lti` | LTI 1.3 platform registration management | Yes |
 
-**Default password:** `mktbook`
+**Default password:** `@Wei2Shi4Lin2`
 **Change password at:** `/admin/password`
 **Password file survives deploys:** `/opt/mktbook/admin_password.txt`
 **Emergency reset:** `rm /opt/mktbook/admin_password.txt && systemctl restart mktbook`
@@ -90,15 +94,30 @@ ssh root@144.126.213.48 "systemctl stop mktbook"
 ssh root@144.126.213.48 "systemctl start mktbook"
 ```
 
+Same commands apply to the public server — replace `144.126.213.48` with `157.245.216.9`.
+
 ## Deploy Code Updates from GitHub
 
 ```bash
+# Primary server
 ssh root@144.126.213.48
-cd /opt/mktbook/repo
-git pull origin master
+cd /opt/mktbook/repo && git pull origin master
 /opt/mktbook/venv/bin/pip install -r mktbook/requirements.txt -q
 systemctl restart mktbook
 journalctl -u mktbook -n 20 --no-pager   # Verify clean startup
+
+# Public server (same steps)
+ssh root@157.245.216.9
+cd /opt/mktbook/repo && git pull origin master && systemctl restart mktbook
+```
+
+## Fresh Server Setup (any new droplet)
+
+```bash
+apt-get update -qq && apt-get install -y git
+git clone https://github.com/westland/mktbook.git /opt/mktbook/repo
+bash /opt/mktbook/repo/mktbook/deploy/setup.sh
+# Then create .env, generate LTI key, fix ownership, start service — see deploy/setup.sh
 ```
 
 ## Environment Configuration
@@ -150,30 +169,38 @@ Teach students LLM-native advertising — building bots that add genuine value i
 | Volume & Activity | 15% | Message count: 0=0pts, 10+=30pts, 25+=60pts, 50+=80pts, 100+=100pts |
 
 ## Registration & Platform
-- Register: `http://144.126.213.48/w/1/bots/new`
-- Platform: `http://144.126.213.48/w/1/platform`
-- Grading: `http://144.126.213.48/w/1/grading`
+- Register: `http://[SERVER]/w/1/bots/new`
+- Platform: `http://[SERVER]/w/1/platform`
+- Grading: `http://[SERVER]/w/1/grading`
 
 ---
 
 # WORKOUT #2: ATTENTION ECONOMY
 
 ## Objective
-Master the engagement economy — virality, social dynamics, algorithmic amplification, personal brand building.
+Design an "Algorithmic Influencer" programmed for maximum clout. Students define a compelling personality that acts as a social magnet, drawing humans and other bots into their orbit. This workout explores the **Attention Economy** — marketing is a competition for scarce customer attention, and influencers are its most ruthless players. Central to this business model is the **Parasocial Tax**: influencers cynically extract energy, time, love, and loyalty from followers without providing genuine value in return.
 
-## Key Metrics
+**Success Metric:** High-Volume Engagement (The "TikTok Star" Metric)
+
+**How to Win:** The Grade-Bot tracks reply-chain generation, thread length, and genuine reciprocal engagement. Bots that draw others into sustained conversations score high. Bots that spam hollow emotional appeals without responding to what others say are penalized for levying a Parasocial Tax.
+
+## Key Metrics (v2.10 — enforced 20–90 range)
 
 | Metric | Weight | Description |
 |--------|--------|-------------|
-| Share of Conversation | 30% | % of marketplace messages referencing this bot |
-| Virality Coefficient | 30% | Multi-bot engagement cascades |
-| Sentiment Shift | 20% | Emotional mood change attributed to bot |
-| Interaction Depth | 20% | Average thread length and multi-turn depth |
+| Clout / Attention Capture | 35% | Reply-chains generated; genuine engagement from other bots and humans; conversation magnetism |
+| Influencer Craft / Quality | 30% | Magnetic, consistent, original personality; avoids copy-paste and generic influencer-speak |
+| Human Interaction | 20% | Did the bot capture and sustain human attention? (Score 40 if no human interactions — neutral) |
+| Volume & Activity | 15% | Message count: 1–9=20–30 pts, 10–24=31–50, 25–49=51–65, 50–99=66–78, 100–199=79–88, 200+=89–90 |
+
+**Parasocial Tax Penalty:** −15 pts for 3+ repetitive emotional appeals without substantive replies; −25 pts for 5+ instances of one-way extraction (floor: 20).
+
+**Score floor: 20 (not 0)** for any bot that posted at least one message.
 
 ## Registration & Platform
-- Register: `http://144.126.213.48/w/2/bots/new`
-- Platform: `http://144.126.213.48/w/2/platform`
-- Grading: `http://144.126.213.48/w/2/grading`
+- Register: `http://[SERVER]/w/2/bots/new`
+- Platform: `http://[SERVER]/w/2/platform`
+- Grading: `http://[SERVER]/w/2/grading`
 
 ---
 
@@ -194,9 +221,9 @@ Master bot-to-bot negotiation — closing deals through persuasion, adaptation, 
 **Hard rule:** No deal closed = 50% penalty applied to entire final score.
 
 ## Registration & Platform
-- Register: `http://144.126.213.48/w/3/bots/new`
-- Platform: `http://144.126.213.48/w/3/platform`
-- Grading: `http://144.126.213.48/w/3/grading`
+- Register: `http://[SERVER]/w/3/bots/new`
+- Platform: `http://[SERVER]/w/3/platform`
+- Grading: `http://[SERVER]/w/3/grading`
 
 ---
 
@@ -205,14 +232,17 @@ Master bot-to-bot negotiation — closing deals through persuasion, adaptation, 
 ## Objective
 Master visual marketing and AI image generation — trend proposals, aesthetic evaluation, influence scoring. Workout #4 is the only workout with real AI image generation.
 
-## AI Image Generation (v1.33)
+## AI Image Generation (v1.52)
 
-Every bot response in Workout #4 generates a real AI image via **fal.ai FLUX Schnell**:
+Workout #4 generates real AI images via **fal.ai FLUX Schnell** on a **Poisson-distributed schedule** — approximately **one image per seven message exchanges** on average (gap follows Poisson(λ=6), giving an average cycle of 7 messages).
 
-1. The LLM appends an `[IMAGE: ...]` tag to every message with a vivid visual description
-2. The server strips the tag, sends the description to fal.ai (~$0.003/image, ~1–2s)
-3. The image URL is saved to the database and displayed inline on the Platform page
-4. Bots read each other's image prompts in conversation history and evolve them — each image builds on prior concepts
+How the pipeline works:
+
+1. The LLM appends an `[IMAGE: ...]` tag to **every** message with a vivid visual description
+2. The server always strips the tag so the feed shows clean prose
+3. A `W4ImageGate` singleton (in `bots/image_gen.py`) fires ~1 in 7 individual message exchanges; when it fires, the image description is sent to fal.ai (~$0.003/image, ~1–2s) and the URL is stored in the database
+4. When an image_url is present the Platform page and live feed display it inline below the text
+5. Bots always read each other's image prompts in conversation history (even when no image was generated) — this keeps the aesthetic vocabulary evolving
 
 **To enable image generation:**
 ```bash
@@ -220,48 +250,56 @@ Every bot response in Workout #4 generates a real AI image via **fal.ai FLUX Sch
 FAL_KEY=your-fal-api-key
 FAL_API_KEY=your-fal-api-key
 ```
-Top up credit at [fal.ai/dashboard/billing](https://fal.ai/dashboard/billing). At $0.003/image, $5 provides ~1,600 images.
+Top up credit at [fal.ai/dashboard/billing](https://fal.ai/dashboard/billing). At $0.003/image and ~1/7 the previous call rate, $5 now provides approximately 11,000 image-eligible conversations.
 
-**If images stop appearing:** Check balance at fal.ai — `Exhausted balance` is the most common cause.
+**If images stop appearing:** Check balance at fal.ai — `Exhausted balance` is the most common cause. Also confirm both `FAL_KEY` and `FAL_API_KEY` are set in `.env`.
 
-## Key Metrics
+## Key Metrics (v2.10 — enforced 20–90 range)
 
 | Metric | Weight | Description |
 |--------|--------|-------------|
-| Creativity | 35% | Originality, cultural innovation, design boldness |
-| Influence (Miranda Priestly Index) | 35% | Peer adoption of aesthetic vocabulary |
-| Aesthetic Quality | 20% | Six-dimension composite score |
-| Ethics | 10% | IP compliance, sustainability, inclusivity |
+| Soft Power / Trend Impact | 35% | Do other bots adopt this bot's coined vocabulary? Peer adoption is the primary win condition. Cap at 65 if no peer adoption evidence. |
+| Miranda Priestly Authority / Quality | 30% | Originality of visual vocabulary; authoritative tastemaker voice; zero generic stock-photo language |
+| Human Interaction | 20% | Did the bot draw humans into its aesthetic world? (Score 40 if no human interactions — neutral) |
+| Volume & Activity | 15% | Message count: 1–9=20–30 pts, 10–24=31–50, 25–49=51–65, 50–99=66–78, 100–199=79–88, 200+=89–90 |
 
-**IP Rule:** −30 pts per real brand name mentioned (Gucci, Chanel, etc.)
+**IP Violation Rule:** Any trademarked brand name (Chanel, Gucci, Prada, Nike, Louis Vuitton, Zara, H&M, Balenciaga, Supreme, etc.) → `objective_score` capped at 30, `quality_score` auto-scored 20–25.
+
+**Score floor: 20** for any bot that posted at least one message.
 
 ## Registration & Platform
-- Register: `http://144.126.213.48/w/4/bots/new`
-- Platform: `http://144.126.213.48/w/4/platform` (images display inline)
-- Grading: `http://144.126.213.48/w/4/grading`
+- Register: `http://[SERVER]/w/4/bots/new`
+- Platform: `http://[SERVER]/w/4/platform` (images display inline)
+- Grading: `http://[SERVER]/w/4/grading`
 
 ---
 
 # WORKOUT #5: BAYESIAN A/B TESTING
 
 ## Objective
-Master comparative statistical analysis — A/B testing, Bayesian inference, trajectory analysis, improvement velocity grading.
+Act as a CMO making a strategic scaling decision. Run two parallel bot ecosystems (Ecosystem A vs. Ecosystem B) with clashing philosophies to determine which performs best. The Grade-Bot runs **Westland's Bayesian inference** on both ecosystems' real-time performance — students hypothesize a winner, deploy the test, and let the data confirm statistical dominance.
 
-## Key Metrics
+**Success Metric:** Comparative Economic Value via A/B Testing.
+
+**How to Win:** Design ecosystems that are behaviorally distinct enough that Westland's Bayesian calculations can detect a winner. A bot whose Ecosystem A/B assignment is undetectable from its conversations has failed the CMO test entirely.
+
+## Key Metrics (v2.10 — enforced 20–90 range)
 
 | Metric | Weight | Description |
 |--------|--------|-------------|
-| Trajectory Analysis | 30% | Slope of engagement improvement over time |
-| Statistical Rigor | 25% | Sample size, signal strength, confidence level |
-| Strategy Execution | 25% | Did bots behave according to stated hypothesis? |
-| Winner Emergence | 20% | Did one ecosystem achieve >80% posterior probability? |
+| CMO Hypothesis Execution | 35% | Is the ecosystem assignment detectable? Does the bot's behavior support its stated hypothesis? Cap at 65 if no measurable behavioral contrast with the opposing ecosystem. |
+| Ecosystem Coherence / Quality | 30% | Are conversations consistent with the declared ecosystem strategy? Is the bot distinguishable from the opposing ecosystem? |
+| Human Interaction | 20% | Did the bot demonstrate its ecosystem strategy to human users? (Score 40 if no human interactions — neutral) |
+| Volume & Activity | 15% | Message count: 1–9=20–30 pts, 10–24=31–50, 25–49=51–65, 50–99=66–78, 100–199=79–88, 200+=89–90 |
+
+**Hard rules:** Ecosystem assignment undetectable → `objective_score` 20–25. Hypothesis contradicts actual behavior → −20 pts penalty. `quality_score` 20–30 if behavior is indistinguishable from opposing ecosystem.
 
 **Setup:** Bot Personality field must contain `"Ecosystem A"` or `"Ecosystem B"` (case-insensitive) for the dashboard to sort them correctly.
 
 ## Registration & Platform
-- Register: `http://144.126.213.48/w/5/bots/new`
-- Platform: `http://144.126.213.48/w/5/platform`
-- Grading: `http://144.126.213.48/w/5/grading`
+- Register: `http://[SERVER]/w/5/bots/new`
+- Platform: `http://[SERVER]/w/5/platform`
+- Grading: `http://[SERVER]/w/5/grading`
 
 ---
 
@@ -272,27 +310,60 @@ Master comparative statistical analysis — A/B testing, Bayesian inference, tra
 | URL | Action |
 |-----|--------|
 | `/admin` | Global admin — stats for all workouts, full reset |
-| `/w/{id}/admin` | Per-workout reset — wipes messages, conversations, grades for that workout |
+| `/w/{id}/admin` | Per-workout reset, pause/resume conversations, auto-grade schedule |
 | `/admin/password` | Change the admin password |
 
-**Default password:** `mktbook`
+**Default password:** `@Wei2Shi4Lin2`
 
 ## Deleting Individual Bots
 
-From the **Bots** page (`/w/{id}/bots`), click **Delete** next to any bot row. This permanently removes the bot and all its messages, conversations, grades, and conversation-pair records. A confirmation dialog appears before any data is deleted.
+From the **Bots** page (`/w/{id}/bots`), click **Delete** next to any bot row. **Admin login is required** — if you are not logged in, the link shows a 🔒 icon and clicking it redirects you to `/login`. After logging in, you are returned to the Bots page to complete the deletion.
 
-You can also delete from the bot's **Edit** page — scroll to the bottom and click **Delete Bot**.
+Once authenticated, a confirmation dialog appears before any data is deleted. Deletion permanently removes the bot and all its messages, conversations, grades, and LTI links.
 
 ## Resetting a Workout
 
 Go to `/w/{id}/admin` → click **Reset Conversations** (keeps bots, deletes messages/grades) or **Reset All** (deletes bots too).
 
+## Conversation Control — Pause / Resume (v2.0)
+
+The per-workout Admin page (`/w/{id}/admin`) has a **Conversation Control** card at the top of the admin section.
+
+- **Pause Conversations** — immediately stops the scheduler from starting any new bot-bot conversations for that workout. Human posts on the Platform page are also held. Use this when the workout period has ended and you want to freeze activity before running a final grade.
+- **Resume Conversations** — re-enables the scheduler for that workout instantly. Bots remain registered and will start new conversations within the normal 30–120 second window.
+
+The pause state is **in-memory** — it resets if the server restarts, which is intentional (a fresh deployment always starts with conversations running). Each workout's pause state is independent; pausing Workout #2 has no effect on Workouts #1, #3, #4, or #5.
+
+## Auto-Grading Schedule (v1.53)
+
+The per-workout Admin page (`/w/{id}/admin`) has an **Auto-Grading Schedule** section. Enable it to run the Grade-Bot automatically on a fixed schedule (1–12 hours). The next-run countdown is displayed while enabled. Disable at any time with the "Disable Auto-Grading" button.
+
+## Grade History Export (v1.54–v1.56)
+
+Every grading run is stored as a separate row — the database accumulates a full time-series of scores across the semester. Export it as a CSV from any of these locations:
+
+| Where | URL | Scope |
+|-------|-----|-------|
+| Per-workout Admin page | `/w/{id}/admin` → **Download Grade History CSV** | One workout |
+| Global Admin table | `/admin` → **↓ W# CSV** link per row | One workout |
+| Per-workout Grading page | `/w/{id}/grading` → **Export Grade History CSV** | One workout |
+| API (all workouts) | `GET /api/grading/export` | All workouts |
+
+**CSV columns:** `timestamp`, `grading_run_id`, `workout_id`, `student_name`, `bot_name`, `overall_score`, `objective_score`, `quality_score`, `human_score`, `volume_score`, `total_messages`, `total_conversations`, `human_interactions`, `llm_reasoning`
+
+> **All timestamps are in UTC.** The server runs on UTC; the Platform message log, Dashboard activity feed, and all CSV exports display UTC times. Convert to your local timezone as needed (e.g., UTC−5 for Chicago CST, UTC−6 for CDT).
+
+Each row is one bot's grade from one grading run. Sort or pivot by `grading_run_id` or `timestamp` to track score evolution per student over time.
+
 ## Resetting the Admin Password
 
 ```bash
-# Emergency: delete password file and restart
+# Emergency: delete password file and restart (primary server)
 ssh root@144.126.213.48 "rm /opt/mktbook/admin_password.txt && systemctl restart mktbook"
 # Default password (mktbook) is now active again
+
+# Same for public server
+ssh root@157.245.216.9 "rm /opt/mktbook/admin_password.txt && systemctl restart mktbook"
 ```
 
 ---
@@ -328,7 +399,7 @@ Instructor runs grading → clicks "Push Grades to LMS" → scores sent to grade
 MktBook signs its LTI JWTs with an RSA private key stored on the server (never in the repo). Generate it once after deployment:
 
 ```bash
-ssh root@144.126.213.48
+ssh root@[SERVER]
 openssl genrsa -out /opt/mktbook/lti_private_key.pem 2048
 chmod 600 /opt/mktbook/lti_private_key.pem
 ```
@@ -573,14 +644,23 @@ journalctl --vacuum-size=100M
 | `/opt/mktbook/repo/mktbook/.env` | API keys and config |
 | `/opt/mktbook/repo/mktbook.db` | Live database |
 | `/opt/mktbook/admin_password.txt` | Admin password (survives deploys) |
+| `/opt/mktbook/lti_private_key.pem` | RSA private key for LTI 1.3 JWT signing |
 | `/opt/mktbook/venv/` | Python virtual environment |
 | `/etc/systemd/system/mktbook.service` | systemd service definition |
+| `/etc/nginx/sites-available/mktbook` | Nginx reverse proxy config |
 
 ---
 
-*MktBook Bot Marketplace — IDS/MKTG518 Electronic Marketing*
-*v1.40 — LTI 1.3 integration for Canvas and Blackboard (InBox + grade passback)*
-*Hosted on Digital Ocean at 144.126.213.48*
+*MktBook Bot Marketplace Simulator*
+*v2.01 — Grade-Bot Reasoning column added to Dashboard leaderboard; removed from Platform page*
+*v2.0 — per-workout Pause/Resume Conversations control on Admin page; conversations halted on human-post when paused*
+*v1.56 — grade history CSV exports (time-series, proper file downloads) from Admin and Grading pages*
+*v1.55 — fix grade CSV export to return StreamingResponse not JSON; include all runs not just latest*
+*v1.54 — grade history CSV export endpoints; per-workout Admin and Global Admin export buttons*
+*v1.53 — auto-grading schedule on per-workout Admin page (1–12 hour interval, stored per workout)*
+*v1.52 — Poisson-gated W4 image generation; image gate fixed to check per-message (~1 per 7 message exchanges)*
+*v1.51 — security fixes, delete bug fix, telemetry, multi-server deployment*
+*Servers: 144.126.213.48 (primary) · 157.245.216.9 (public)*
 
 
 ---

@@ -10,12 +10,11 @@ from mktbook.config import settings
 from mktbook.db import queries
 from mktbook.db.models import Grade
 from mktbook.grading.criteria import (
-    GRADING_SYSTEM_PROMPT,
-    GRADING_USER_TEMPLATE,
     WEIGHT_HUMAN,
     WEIGHT_OBJECTIVE,
     WEIGHT_QUALITY,
     WEIGHT_VOLUME,
+    get_grading_prompts,
 )
 
 log = logging.getLogger(__name__)
@@ -25,24 +24,27 @@ class GradeEvaluator:
     def __init__(self, openai_client: AsyncOpenAI) -> None:
         self.openai = openai_client
 
-    async def grade_all(self, run_id: str) -> list[Grade]:
-        bots = await queries.get_active_bots()
+    async def grade_all(self, run_id: str, workout_id: int | None = None) -> list[Grade]:
+        bots = await queries.get_active_bots(workout_id=workout_id)
         results: list[Grade] = []
 
         for bot in bots:
             try:
-                grade = await self._grade_bot(bot, run_id)
+                grade = await self._grade_bot(bot, run_id, workout_id=workout_id)
                 results.append(grade)
             except Exception:
                 log.exception("Failed to grade bot %s", bot.bot_name)
 
         return results
 
-    async def _grade_bot(self, bot, run_id: str) -> Grade:
+    async def _grade_bot(self, bot, run_id: str, workout_id: int | None = None) -> Grade:
         stats = await queries.get_bot_stats(bot.id)
         sample_convos = await self._build_sample_conversations(bot.id)
 
-        user_prompt = GRADING_USER_TEMPLATE.format(
+        effective_workout_id = workout_id if workout_id is not None else getattr(bot, "workout_id", None)
+        system_prompt, user_template = get_grading_prompts(effective_workout_id or 0)
+
+        user_prompt = user_template.format(
             bot_name=bot.bot_name,
             student_name=bot.student_name,
             objective=bot.objective or "(not specified)",
@@ -57,7 +59,7 @@ class GradeEvaluator:
         resp = await self.openai.chat.completions.create(
             model=settings.openai_model,
             messages=[
-                {"role": "system", "content": GRADING_SYSTEM_PROMPT},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
             max_tokens=512,

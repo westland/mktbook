@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import logging
+import math
 import os
+import random
 import re
 
 import fal_client
@@ -43,6 +45,10 @@ async def generate_image(prompt: str) -> str | None:
         key = settings.fal_api_key or os.environ.get("FAL_API_KEY", "")
         if key:
             os.environ["FAL_KEY"] = key
+        else:
+            log.warning("fal.ai: FAL_KEY and FAL_API_KEY are both unset — image generation disabled. "
+                        "Set FAL_API_KEY in mktbook/.env to enable images.")
+            return None
 
     try:
         result = await fal_client.run_async(
@@ -61,3 +67,39 @@ async def generate_image(prompt: str) -> str | None:
     except Exception:
         log.exception("fal.ai image generation failed for prompt: %.80s", prompt)
     return None
+
+
+def _poisson_sample(lam: float) -> int:
+    """Draw a non-negative integer from Poisson(lam) using Knuth's algorithm."""
+    L = math.exp(-lam)
+    k, p = 0, 1.0
+    while p > L:
+        k += 1
+        p *= random.random()
+    return k - 1
+
+
+class W4ImageGate:
+    """Poisson-gated trigger for Workout #4 fal.ai image generation.
+
+    The gap between picture-producing conversations follows Poisson(MEAN_GAP).
+    With MEAN_GAP=6 the average cycle (gap + 1) equals 7 conversations,
+    giving one image per ~7 conversations on average.
+    """
+
+    MEAN_GAP = 6
+
+    def __init__(self) -> None:
+        self._remaining: int = _poisson_sample(self.MEAN_GAP)
+
+    def should_trigger(self) -> bool:
+        """Call once per conversation.  Returns True ~1 in 7 times."""
+        if self._remaining <= 0:
+            self._remaining = _poisson_sample(self.MEAN_GAP)
+            return True
+        self._remaining -= 1
+        return False
+
+
+# Singleton — shared across all W4 bot-bot and bot-human conversations.
+w4_image_gate = W4ImageGate()

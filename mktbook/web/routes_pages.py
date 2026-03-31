@@ -1,6 +1,8 @@
 """HTML page routes."""
 from __future__ import annotations
 
+import datetime
+
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
@@ -60,6 +62,7 @@ async def w_dashboard(request: Request, workout_id: int) -> HTMLResponse:
                 "human_score": g.human_score,
                 "volume_score": g.volume_score,
                 "bot_id": g.bot_id,
+                "llm_reasoning": g.llm_reasoning,
             })
     # Get bot IDs for this workout to filter messages
     bot_ids = {b.id for b in bots}
@@ -93,6 +96,7 @@ async def w_bot_list(request: Request, workout_id: int) -> HTMLResponse:
         "workout": workout,
         "bots": bots,
         "stats": stats,
+        "authenticated": is_authenticated(request),
     })
 
 
@@ -287,7 +291,9 @@ async def w_platform_post(
     if not workout:
         return HTMLResponse("<h1>Workout not found</h1>", status_code=404)
     fleet = request.app.state.fleet
-    if fleet and message_content.strip():
+    scheduler = getattr(request.app.state, "scheduler", None)
+    paused = scheduler.is_paused(workout_id) if scheduler else False
+    if fleet and message_content.strip() and not paused:
         await fleet.dispatch_human_message(
             workout_id=workout_id,
             author_name=author_name.strip() or "Visitor",
@@ -310,13 +316,64 @@ async def w_admin_page(
     if not workout:
         return HTMLResponse("<h1>Workout not found</h1>", status_code=404)
     stats = await queries.get_workout_stats(workout_id)
+
+    auto_grader = getattr(request.app.state, "auto_grader", None)
+    auto_grade_hours = auto_grader.get_interval(workout_id) if auto_grader else None
+    next_run_at = auto_grader.get_next_run_at(workout_id) if auto_grader else None
+    if next_run_at:
+        mins_until = max(0, int((next_run_at - datetime.datetime.now()).total_seconds() / 60))
+    else:
+        mins_until = None
+
+    scheduler = getattr(request.app.state, "scheduler", None)
+    workout_paused = scheduler.is_paused(workout_id) if scheduler else False
+
     return TEMPLATES.TemplateResponse("w_admin.html", {
         "request": request,
         "workout": workout,
         "stats": stats,
         "done": done,
         "active_page": "admin",
+        "auto_grade_hours": auto_grade_hours,
+        "auto_grade_mins_until": mins_until,
+        "workout_paused": workout_paused,
     })
+
+
+@router.post("/w/{workout_id}/admin/auto-grade", response_model=None)
+async def w_admin_set_auto_grade(
+    request: Request,
+    workout_id: int,
+    interval_hours: int = Form(0),
+) -> RedirectResponse:
+    """Enable or disable automatic regrading for a workout."""
+    if not is_authenticated(request):
+        return redirect_to_login(f"/w/{workout_id}/admin")
+    auto_grader = getattr(request.app.state, "auto_grader", None)
+    if auto_grader:
+        if interval_hours == 0:
+            await auto_grader.clear(workout_id)
+        else:
+            interval_hours = max(1, min(12, interval_hours))
+            await auto_grader.set(workout_id, interval_hours)
+    return RedirectResponse(url=f"/w/{workout_id}/admin", status_code=303)
+
+
+@router.post("/w/{workout_id}/admin/pause", response_model=None)
+async def w_admin_toggle_pause(
+    request: Request,
+    workout_id: int,
+) -> RedirectResponse:
+    """Pause or resume bot-bot conversations for this workout."""
+    if not is_authenticated(request):
+        return redirect_to_login(f"/w/{workout_id}/admin")
+    scheduler = getattr(request.app.state, "scheduler", None)
+    if scheduler:
+        if scheduler.is_paused(workout_id):
+            scheduler.resume_workout(workout_id)
+        else:
+            scheduler.pause_workout(workout_id)
+    return RedirectResponse(url=f"/w/{workout_id}/admin", status_code=303)
 
 
 @router.post("/w/{workout_id}/admin/reset/conversations")

@@ -7,43 +7,49 @@ import io
 from mktbook.db import queries
 
 
-async def export_csv() -> str:
-    """Export latest grades for all bots as CSV text."""
-    grades = await queries.get_latest_grades()
-    bots = {b.id: b for b in await queries.get_all_bots()}
+_HEADERS = [
+    "timestamp",
+    "grading_run_id",
+    "workout_id",
+    "student_name",
+    "bot_name",
+    "overall_score",
+    "objective_score",
+    "quality_score",
+    "human_score",
+    "volume_score",
+    "total_messages",
+    "total_conversations",
+    "human_interactions",
+    "llm_reasoning",
+]
 
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow([
-        "Bot Name",
-        "Student Name",
-        "Overall Score",
-        "Objective Score (35%)",
-        "Quality Score (30%)",
-        "Human Score (20%)",
-        "Volume Score (15%)",
-        "Total Messages",
-        "Total Conversations",
-        "Human Interactions",
-        "Reasoning",
-        "Graded At",
-    ])
 
-    for g in grades:
-        bot = bots.get(g.bot_id)
+def _write_rows(writer: csv.writer, rows: list[dict]) -> None:
+    for r in rows:
         writer.writerow([
-            bot.bot_name if bot else "Unknown",
-            bot.student_name if bot else "Unknown",
-            f"{g.overall_score:.1f}",
-            f"{g.objective_score:.1f}",
-            f"{g.quality_score:.1f}",
-            f"{g.human_score:.1f}",
-            f"{g.volume_score:.1f}",
-            g.total_messages,
-            g.total_conversations,
-            g.human_interactions,
-            g.llm_reasoning,
-            g.created_at,
+            r["created_at"],
+            r["grading_run_id"],
+            r["workout_id"],
+            r["student_name"],
+            r["bot_name"],
+            round(r["overall_score"], 2),
+            round(r["objective_score"], 2),
+            round(r["quality_score"], 2),
+            round(r["human_score"], 2),
+            round(r["volume_score"], 2),
+            r["total_messages"],
+            r["total_conversations"],
+            r["human_interactions"],
+            r["llm_reasoning"],
         ])
 
+
+async def export_all_csv() -> str:
+    """Export full grade history for all workouts as CSV text."""
+    rows = await queries.get_all_grades_history()
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(_HEADERS)
+    _write_rows(writer, rows)
     return output.getvalue()

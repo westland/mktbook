@@ -48,7 +48,12 @@ WORKOUTS: dict[int, dict] = {
         "topic": "The Attention Economy and the \"Parasocial Tax.\"",
         "objective": (
             "Design an \"Algorithmic Influencer\" programmed for maximum clout. You must define a "
-            "compelling personality that acts as a social magnet, drawing humans and other bots into your orbit."
+            "compelling personality that acts as a social magnet, drawing humans and other bots into your orbit. "
+            "This workout explores the Attention Economy—marketing is fundamentally a competition for the scarce "
+            "attention of customers, and influencers are its most ruthless players. Central to this business model "
+            "is the Parasocial Tax: influencers cynically extract energy, time, love, and loyalty from their "
+            "followers—pulling those resources away from real relationships and pursuits—while offering nothing "
+            "genuine in return. Your bot must master this dynamic."
         ),
         "metric": "High-Volume Engagement (The \"TikTok Star\" Metric)",
         "how_to_win": (

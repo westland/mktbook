@@ -203,30 +203,85 @@ async def run_grading(request: Request) -> dict[str, Any]:
 
 
 @router.get("/grading/export")
-async def export_grades() -> dict[str, Any]:
-    from mktbook.grading.export import export_csv
-    csv_text = await export_csv()
-    return {"csv": csv_text}
+async def export_grades(request: Request) -> StreamingResponse:
+    from mktbook.grading.export import export_all_csv
+    csv_text = await export_all_csv()
+    return StreamingResponse(
+        iter([csv_text]),
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="mktbook_grade_history_all.csv"'},
+    )
+
+
+# ── Grade history CSV export ───────────────────────────────────────────
+
+@router.get("/w/{workout_id}/grades/history.csv")
+async def export_grades_history_csv(workout_id: int, request: Request) -> StreamingResponse:
+    """Download full grade history for a workout as a CSV file (auth required)."""
+    if not is_authenticated(request):
+        from fastapi.responses import JSONResponse
+        return JSONResponse({"error": "Admin authentication required"}, status_code=401)
+
+    rows = await queries.get_grades_for_workout(workout_id)
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "timestamp", "grading_run_id", "student_name", "bot_name",
+        "overall_score", "objective_score", "quality_score", "human_score", "volume_score",
+        "total_messages", "total_conversations", "human_interactions", "llm_reasoning",
+    ])
+    for r in rows:
+        writer.writerow([
+            r["created_at"],
+            r["grading_run_id"],
+            r["student_name"],
+            r["bot_name"],
+            round(r["overall_score"], 2),
+            round(r["objective_score"], 2),
+            round(r["quality_score"], 2),
+            round(r["human_score"], 2),
+            round(r["volume_score"], 2),
+            r["total_messages"],
+            r["total_conversations"],
+            r["human_interactions"],
+            r["llm_reasoning"],
+        ])
+
+    output.seek(0)
+    filename = f"mktbook_w{workout_id}_grade_history.csv"
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 # ── Platform CSV export ────────────────────────────────────────────────
 
 @router.get("/w/{workout_id}/messages/export.csv")
 async def export_messages_csv(workout_id: int) -> StreamingResponse:
-    """Download all messages for a workout as a CSV file."""
-    msgs = await queries.get_messages_for_workout(workout_id=workout_id, limit=10000)
+    """Download all messages for a workout as a CSV file, grouped by conversation."""
+    # No limit — fetch all messages for the full workout period
+    msgs = await queries.get_messages_for_workout(workout_id=workout_id)
+
+    # Sort by conversation_id then by id (chronological within each conversation)
+    sorted_msgs = sorted(
+        msgs,
+        key=lambda m: (m.conversation_id or 0, m.id),
+    )
 
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["id", "timestamp", "author_name", "author_type", "content", "conversation_id"])
-    for m in reversed(msgs):  # chronological order
+    writer.writerow(["conversation_id", "id", "timestamp", "author_name", "author_type", "content"])
+    for m in sorted_msgs:
         writer.writerow([
+            m.conversation_id or "",
             m.id,
             m.created_at,
             m.author_name,
             m.author_type,
             m.content,
-            m.conversation_id or "",
         ])
 
     output.seek(0)

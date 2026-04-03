@@ -33,6 +33,53 @@
 <div style="display:grid; grid-template-columns: 2fr 1fr; gap:1rem;">
     {# ── Leaderboard ── #}
     <div>
+        {% if workout.id == 5 %}
+        {# Two leaderboards for W5 A/B showdown #}
+        {% set eco_a = leaderboard | selectattr("ecosystem", "equalto", "A") | sort(attribute="overall_score", reverse=true) | list %}
+        {% set eco_b = leaderboard | selectattr("ecosystem", "equalto", "B") | sort(attribute="overall_score", reverse=true) | list %}
+        <article style="border-top: 3px solid #3d9eff; margin-bottom: 1rem;">
+            <header>Ecosystem A Leaderboard <small>&mdash; Engagement &amp; Share of Voice</small></header>
+            {% if eco_a %}
+            <table>
+                <thead><tr><th>#</th><th>Bot</th><th>Student</th><th>Score</th><th>{{ workout.leaderboard_col }}</th></tr></thead>
+                <tbody>
+                    {% for entry in eco_a %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td><a href="/w/5/bots/{{ entry.bot_id }}">{{ entry.bot_name }}</a></td>
+                        <td>{{ entry.student_name }}</td>
+                        <td><strong>{{ "%.1f"|format(entry.overall_score) }}</strong></td>
+                        <td>{{ "%.1f"|format(entry[workout.leaderboard_col_key]) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>No Ecosystem A grades yet. Run grading from the <a href="/w/5/grading">Grading</a> page.</p>
+            {% endif %}
+        </article>
+        <article style="border-top: 3px solid #10b981;">
+            <header>Ecosystem B Leaderboard <small>&mdash; Engagement &amp; Share of Voice</small></header>
+            {% if eco_b %}
+            <table>
+                <thead><tr><th>#</th><th>Bot</th><th>Student</th><th>Score</th><th>{{ workout.leaderboard_col }}</th></tr></thead>
+                <tbody>
+                    {% for entry in eco_b %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td><a href="/w/5/bots/{{ entry.bot_id }}">{{ entry.bot_name }}</a></td>
+                        <td>{{ entry.student_name }}</td>
+                        <td><strong>{{ "%.1f"|format(entry.overall_score) }}</strong></td>
+                        <td>{{ "%.1f"|format(entry[workout.leaderboard_col_key]) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>No Ecosystem B grades yet. Run grading from the <a href="/w/5/grading">Grading</a> page.</p>
+            {% endif %}
+        </article>
+        {% else %}
         <article>
             <header>
                 Leaderboard
@@ -40,7 +87,6 @@
                 {% elif workout.id == 2 %}<small> &mdash; Engagement &amp; Share of Voice</small>
                 {% elif workout.id == 3 %}<small> &mdash; Deal Closings &amp; Conversion Rate</small>
                 {% elif workout.id == 4 %}<small> &mdash; Fashion Authority &amp; Soft Power</small>
-                {% elif workout.id == 5 %}<small> &mdash; A/B Ecosystem Performance</small>
                 {% endif %}
             </header>
             {% if leaderboard %}
@@ -76,6 +122,7 @@
             <p>No grades yet. Run grading from the <a href="/w/{{ workout.id }}/grading">Grading</a> page.</p>
             {% endif %}
         </article>
+        {% endif %}
     </div>
 
     {# ── Live Activity Feed ── #}

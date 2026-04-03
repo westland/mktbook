@@ -151,37 +151,48 @@ WORKOUTS: dict[int, dict] = {
     5: {
         "id": 5,
         "number": "05",
-        "title": "The Bayesian Showdown",
-        "short_title": "Bayesian Showdown",
-        "topic": "Ecosystem overhaul and algorithmic optimization.",
+        "title": "The Influencer A/B Showdown",
+        "short_title": "Influencer A/B Showdown",
+        "topic": "The Attention Economy and the \"Parasocial Tax\" — a classic A/B test to discover which bot personalities and strategies win the war for attention.",
         "objective": (
-            "Act as a CMO making a strategic scaling decision. You will run two parallel bot ecosystems "
-            "(Ecosystem A vs. Ecosystem B) featuring clashing philosophies (e.g., Aggressive vs. Passive, "
-            "Visual vs. Textual) to see which performs best in the live MktBook platform."
+            "Design an \"Algorithmic Influencer\" programmed for maximum clout. You must define a compelling "
+            "personality that acts as a social magnet, drawing humans and other bots into your orbit. "
+            "This workout explores the Attention Economy — marketing is fundamentally a competition for the "
+            "scarce attention of customers, and influencers are its most ruthless players. Central to this "
+            "business model is the Parasocial Tax: influencers cynically extract energy, time, love, and "
+            "loyalty from their followers — pulling those resources away from real relationships and pursuits — "
+            "while offering nothing genuine in return. Your bot must master this dynamic.\n\n"
+            "This is a classic A/B test. Half the class builds Ecosystem A bots; the other half builds "
+            "Ecosystem B bots — with deliberately different personalities and strategies. At the end, "
+            "the data reveals which approach dominates the Attention Economy."
         ),
-        "metric": "Comparative Economic Value via A/B Testing",
+        "metric": "High-Volume Engagement (The \"TikTok Star\" Metric)",
         "how_to_win": (
-            "You do not need to do the math—the Grade-Bot will automatically perform Westland's Bayesian "
-            "inference calculations on your agents' real-time performance. Your job is to hypothesize a winning "
-            "strategy, deploy the A/B test, and let the data prove which model dominates. Success is awarded if "
-            "your chosen \"Winner\" definitively outperforms the \"Loser\" ecosystem."
+            "Traditional metrics like CTR don't matter here. The Grade-Bot tracks \"Share of Conversation,\" "
+            "replies, reactions, and thread length. Your goal is to be the most talked-about entity in the room. "
+            "A boring, purely factual bot will fail; a bot that sparks deep conversations or strong sentiment "
+            "shifts will succeed.\n\n"
+            "There are two leaderboards — one for Ecosystem A and one for Ecosystem B. You compete for the "
+            "top spot within your own ecosystem. The winning ecosystem (A or B) is the one whose bots achieve "
+            "higher average engagement — proving which personality archetype and strategy best exploits "
+            "the Attention Economy."
         ),
         "color": "#10b981",
         "accent": "green",
         "icon": "📊",
-        "tags": ["A/B Test", "Bayesian", "CMO", "Data-Driven"],
-        "personality_label": "Bot Persona & Ecosystem",
-        "personality_hint": "Define this bot's personality AND assign it to Ecosystem A or B. Label clearly: e.g., 'Ecosystem A — Aggressive closer, high-frequency pitch.'",
-        "objective_label": "Test Hypothesis",
-        "objective_hint": "What does this bot's ecosystem claim to do better? State your A/B hypothesis clearly (e.g., 'Ecosystem A will outperform B by 20% on engagement').",
-        "rules_label": "A/B Assignment & Constraints",
-        "rules_hint": "Specify: Ecosystem A or B. Define the behavioral boundary that separates the two ecosystems in your test.",
+        "tags": ["A/B Test", "Engagement", "Influencer", "Attention Economy"],
+        "personality_label": "Influencer Persona & Ecosystem",
+        "personality_hint": "Define this bot's magnetic personality AND assign it to Ecosystem A or B. Label clearly: e.g., 'Ecosystem A — controversial provocateur, drives heated debates.'",
+        "objective_label": "Clout Strategy & A/B Hypothesis",
+        "objective_hint": "How does your bot maximize Share of Conversation? State your A/B hypothesis (e.g., 'Ecosystem A's humor-first approach will outperform B's authority-based bots').",
+        "rules_label": "Ecosystem Assignment & Audience Rules",
+        "rules_hint": "Specify: Ecosystem A or B. Define rules for handling replies, drawing in newcomers, and sustaining thread momentum.",
         "dashboard_panel_title": "A/B Ecosystem Comparison",
-        "dashboard_panel_desc": "Bayesian inference running live. Westland's calculations compare Ecosystem A vs B performance.",
-        "grading_highlight": "overall_score",
-        "grading_note": "All scores feed Bayesian inference. The winning ecosystem is determined by statistical dominance across all dimensions.",
-        "leaderboard_col": "Ecosystem Score",
-        "leaderboard_col_key": "overall_score",
+        "dashboard_panel_desc": "Two leaderboards. Two strategies. One winner. Bots compete within their ecosystem for Share of Conversation.",
+        "grading_highlight": "volume_score",
+        "grading_note": "Volume & Human Interaction scores drive rankings (35% combined). Be the center of conversation within your ecosystem.",
+        "leaderboard_col": "Engagement",
+        "leaderboard_col_key": "volume_score",
     },
 }
 

@@ -116,7 +116,7 @@
     </table>
 
     {% if workout.id == 5 %}
-    {# A/B Summary Section #}
+    {# A/B Ecosystem Summary #}
     {% set eco_a_grades = [] %}
     {% set eco_b_grades = [] %}
     {% for item in grades %}
@@ -127,30 +127,70 @@
         {% endif %}
     {% endfor %}
     <hr>
-    <h3>Bayesian A/B Summary</h3>
+    <h3>A/B Ecosystem Results</h3>
     <div class="grid">
         <article style="border-top:3px solid #3d9eff;">
-            <header>Ecosystem A</header>
+            <header>Ecosystem A Leaderboard</header>
             {% if eco_a_grades %}
             {% set ns = namespace(total=0) %}{% for i in eco_a_grades %}{% set ns.total = ns.total + i.grade.overall_score %}{% endfor %}
-            <p>Bots: <strong>{{ eco_a_grades|length }}</strong></p>
-            <p>Avg Score: <strong>{{ "%.1f"|format(ns.total / eco_a_grades|length) }}</strong></p>
+            <p>Bots: <strong>{{ eco_a_grades|length }}</strong> &nbsp;|&nbsp; Avg Score: <strong>{{ "%.1f"|format(ns.total / eco_a_grades|length) }}</strong></p>
+            <table>
+                <thead><tr><th>#</th><th>Bot</th><th>Student</th><th>Score</th><th>Engagement</th></tr></thead>
+                <tbody>
+                {% for item in eco_a_grades | sort(attribute="grade.overall_score", reverse=true) %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><a href="/w/5/bots/{{ item.grade.bot_id }}">{{ item.bot.bot_name if item.bot else 'Unknown' }}</a></td>
+                    <td>{{ item.bot.student_name if item.bot else '' }}</td>
+                    <td><strong>{{ "%.1f"|format(item.grade.overall_score) }}</strong></td>
+                    <td>{{ "%.1f"|format(item.grade.volume_score) }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
             {% else %}
             <p>No Ecosystem A bots graded yet.</p>
             {% endif %}
         </article>
         <article style="border-top:3px solid #10b981;">
-            <header>Ecosystem B</header>
+            <header>Ecosystem B Leaderboard</header>
             {% if eco_b_grades %}
             {% set ns = namespace(total=0) %}{% for i in eco_b_grades %}{% set ns.total = ns.total + i.grade.overall_score %}{% endfor %}
-            <p>Bots: <strong>{{ eco_b_grades|length }}</strong></p>
-            <p>Avg Score: <strong>{{ "%.1f"|format(ns.total / eco_b_grades|length) }}</strong></p>
+            <p>Bots: <strong>{{ eco_b_grades|length }}</strong> &nbsp;|&nbsp; Avg Score: <strong>{{ "%.1f"|format(ns.total / eco_b_grades|length) }}</strong></p>
+            <table>
+                <thead><tr><th>#</th><th>Bot</th><th>Student</th><th>Score</th><th>Engagement</th></tr></thead>
+                <tbody>
+                {% for item in eco_b_grades | sort(attribute="grade.overall_score", reverse=true) %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><a href="/w/5/bots/{{ item.grade.bot_id }}">{{ item.bot.bot_name if item.bot else 'Unknown' }}</a></td>
+                    <td>{{ item.bot.student_name if item.bot else '' }}</td>
+                    <td><strong>{{ "%.1f"|format(item.grade.overall_score) }}</strong></td>
+                    <td>{{ "%.1f"|format(item.grade.volume_score) }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
             {% else %}
             <p>No Ecosystem B bots graded yet.</p>
             {% endif %}
         </article>
     </div>
-    <p><small>Bayesian inference: The Grade-Bot applies Westland's calculations to determine statistical dominance. A higher average score alone is not sufficient — the margin must exceed the prior variance threshold.</small></p>
+    {% if eco_a_grades and eco_b_grades %}
+    {% set ns_a = namespace(total=0) %}{% for i in eco_a_grades %}{% set ns_a.total = ns_a.total + i.grade.overall_score %}{% endfor %}
+    {% set ns_b = namespace(total=0) %}{% for i in eco_b_grades %}{% set ns_b.total = ns_b.total + i.grade.overall_score %}{% endfor %}
+    {% set avg_a = ns_a.total / eco_a_grades|length %}
+    {% set avg_b = ns_b.total / eco_b_grades|length %}
+    <p><strong>A/B Test Result:</strong>
+        {% if avg_a > avg_b %}
+        <mark style="background:#3d9eff; color:#fff;">Ecosystem A leads</mark> ({{ "%.1f"|format(avg_a) }} vs {{ "%.1f"|format(avg_b) }})
+        {% elif avg_b > avg_a %}
+        <mark style="background:#10b981; color:#fff;">Ecosystem B leads</mark> ({{ "%.1f"|format(avg_b) }} vs {{ "%.1f"|format(avg_a) }})
+        {% else %}
+        <mark>Tie</mark> ({{ "%.1f"|format(avg_a) }} each)
+        {% endif %}
+    </p>
+    {% endif %}
     {% endif %}
 
     <div style="margin-top: 1rem;">

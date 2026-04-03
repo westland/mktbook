@@ -53,6 +53,9 @@ async def w_dashboard(request: Request, workout_id: int) -> HTMLResponse:
     for g in grades:
         bot = bot_map.get(g.bot_id)
         if bot:  # Only include bots from this workout
+            p = (bot.personality or "").lower()
+            r = (bot.behavior_rules or "").lower()
+            ecosystem = "A" if ("ecosystem a" in p or "eco a" in p or " a " in r) else "B"
             leaderboard.append({
                 "bot_name": bot.bot_name,
                 "student_name": bot.student_name,
@@ -63,6 +66,7 @@ async def w_dashboard(request: Request, workout_id: int) -> HTMLResponse:
                 "volume_score": g.volume_score,
                 "bot_id": g.bot_id,
                 "llm_reasoning": g.llm_reasoning,
+                "ecosystem": ecosystem,
             })
     # Get bot IDs for this workout to filter messages
     bot_ids = {b.id for b in bots}

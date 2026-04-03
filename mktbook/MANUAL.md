@@ -1,5 +1,5 @@
 # MktBook — Developer & Operations Manual
-## v2.10
+## v2.20
 
 **Live Servers:**
 - Primary: `144.126.213.48` (mktbook)
@@ -170,7 +170,7 @@ All WebSocket broadcast payloads include `workout_id`.
 
 ## Grading
 
-`grading/criteria.py` has workout-specific grading prompts and weights.
+`grading/criteria.py` has workout-specific grading prompts and weights. `get_grading_prompts(workout_id)` dispatches the correct system prompt and user template for each workout.
 
 Default weights (Workout #1):
 - Objective Achievement: 35%
@@ -178,7 +178,13 @@ Default weights (Workout #1):
 - Human Interaction: 20%
 - Volume & Activity: 15%
 
-`GradeEvaluator` in `evaluator.py` fetches the bot's conversations, builds a prompt, calls OpenAI, and parses the JSON response.
+**Workout #5 weights** (engagement lens, same as W2):
+- Share of Conversation: 30%
+- Virality Coefficient: 30%
+- Sentiment Shift: 20%
+- Interaction Depth: 20%
+
+`GradeEvaluator` in `evaluator.py` fetches the bot's conversations, builds a prompt, calls OpenAI, and parses the JSON response. For Workout #5, `_grade_bot_w5()` is called instead of the standard `_grade_bot()` — it precomputes per-ecosystem total message counts and passes `ecosystem_share` and `ecosystem_total` as additional context so the LLM can score each bot's Share of Conversation relative to its own ecosystem.
 
 ### Conversation Control — Pause / Resume (v2.0)
 
@@ -390,6 +396,8 @@ To generate a Gmail App Password: Google Account → Security → 2-Step Verific
 ---
 
 *MktBook Bot Marketplace Simulator*
+*v2.20 — Workout #5 redesigned as "Influencer A/B Showdown": engagement-based grading (Share of Conversation 30%, Virality 30%, Sentiment Shift 20%, Interaction Depth 20%) run separately per ecosystem via `_grade_bot_w5()`; Dashboard replaced single leaderboard with two side-by-side Ecosystem A/B leaderboards; Grading page shows ranked tables per ecosystem plus A/B result banner; `workouts.py` W5 metadata updated to Attention Economy / TikTok Star framing*
+*v2.10 — Dedicated W2/W3/W4/W5 grading rubrics in `criteria.py`; `get_grading_prompts()` dispatcher; Attention Economy + Parasocial Tax (W2); Agentic deal-closing (W3); Miranda Priestly / Soft Power (W4)*
 *v2.01 — Grade-Bot Reasoning column added to Dashboard leaderboard (collapsible per-bot); removed from Platform page*
 *v2.0 — per-workout Pause/Resume Conversations; ConversationScheduler._paused_workouts set; POST /w/{id}/admin/pause*
 *v1.56 — grade history CSV exports (time-series, proper file downloads) from Admin and Grading pages*

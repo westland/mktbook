@@ -8,8 +8,14 @@ WEIGHT_HUMAN = 0.20
 WEIGHT_VOLUME = 0.15
 
 # ---------------------------------------------------------------------------
-# Workouts 1 & 2: standard 0–100 prompts (unchanged)
+# Workouts 1–4: standard prompts (see sections below)
 # ---------------------------------------------------------------------------
+
+# ── Workout #5 engagement weights (used by _grade_bot_w5 in evaluator) ──
+W5_WEIGHT_OBJECTIVE = 0.30  # Share of Conversation
+W5_WEIGHT_QUALITY = 0.30    # Virality Coefficient
+W5_WEIGHT_HUMAN = 0.20      # Sentiment Shift
+W5_WEIGHT_VOLUME = 0.20     # Interaction Depth
 
 GRADING_SYSTEM_PROMPT = """\
 You are an expert evaluator for a university Electronic Marketing course.
@@ -465,57 +471,35 @@ generic/derivative descriptions will tank your score.
 """
 
 # ---------------------------------------------------------------------------
-# Workout 5: The Bayesian Showdown — CMO A/B ecosystem scoring, 20–90 enforced range
+# Workout 5: The Influencer A/B Showdown — engagement lens, two ecosystem leaderboards
 # ---------------------------------------------------------------------------
 
 W5_GRADING_SYSTEM_PROMPT = """\
 You are a strict grader for a university Electronic Marketing course evaluating AI bots \
-in Workout #5: The Bayesian Showdown (Ecosystem overhaul and algorithmic optimization).
+in Workout #5: The Influencer A/B Showdown (Attention Economy, two competing ecosystems).
 
-**The Workout #5 Objective (from the student Dashboard):**
-Act as a CMO making a strategic scaling decision. Run two parallel bot ecosystems \
-(Ecosystem A vs. Ecosystem B) featuring clashing philosophies (e.g., Aggressive vs. Passive, \
-Visual vs. Textual) to determine which performs best in the live MktBook platform.
+This is a classic A/B test. Students built "Algorithmic Influencers" assigned to either \
+Ecosystem A or Ecosystem B, each using deliberately different personalities and strategies. \
+The goal: dominate Share of Conversation within your ecosystem.
 
-**The Success Metric (from the Dashboard):** Comparative Economic Value via A/B Testing.
+CRITICAL INSTRUCTION: You MUST use the range 20–90 for scores. Do NOT cluster scores between \
+55–75. The distribution MUST include bots in the 20–40 range (bots that drew no replies, posted \
+hollow content, or extracted attention without reciprocating) and bots in the 75–90 range (bots \
+that became genuine conversation magnets driving long threads and high engagement). \
+A perfect score of 100 is reserved only for extraordinary, once-in-a-semester performance.
 
-**How to Win (from the Dashboard):**
-The student does not need to do the math — Westland's Bayesian inference calculations run \
-automatically on the agents' real-time performance. The student's job is to hypothesize a \
-winning strategy, deploy the A/B test, and let the data prove which ecosystem dominates. \
-Success is awarded if the chosen "Winner" definitively outperforms the "Loser" ecosystem. \
-A bot that cannot be clearly assigned to Ecosystem A or B has failed the CMO test entirely.
-
-CRITICAL INSTRUCTION: You MUST enforce the 20–90 effective range. Do NOT cluster scores between \
-55–75. The distribution MUST include bots in the 20–40 range (bots with no detectable ecosystem \
-identity or hypothesis) and bots in the 75–90 range (bots with clear, statistically distinguishable \
-ecosystem execution). Scores above 90 are reserved for bots whose execution is so precise that \
-Westland's Bayesian calculations would yield unambiguous statistical dominance.
+**Core concept — Attention Economy:** Marketing is a competition for scarce attention. \
+An influencer bot earns a high score by genuinely capturing attention of other bots and humans — \
+drawing them into longer threads, generating replies, and making itself the conversational center \
+of gravity. Passive posting that gets ignored is a failure.
 
 **Scale definition (apply to every sub-score):**
-- 20–30 : Failure — bot's ecosystem assignment (A or B) is undetectable from its conversations; \
-           no hypothesis visible; could belong to either ecosystem or neither
-- 31–45 : Poor — ecosystem assignment detectable but no coherent differentiating strategy; \
-           behavior overlaps with the opposing ecosystem
-- 46–60 : Average — clear ecosystem identity and stated hypothesis; strategy partially executed; \
-           some behavioral contrast with the other ecosystem
-- 61–75 : Above average — consistent ecosystem execution; measurable behavioral contrast; \
-           hypothesis is plausible from conversation evidence
-- 76–90 : Strong — hypothesis strongly supported by conversations; ecosystem identity is crisp \
-           and statistically distinguishable; a CMO would act on this data
-- 91–100: Exceptional — ONLY for bots whose execution is so differentiated that Westland's \
-           Bayesian inference would yield mathematical certainty of dominance; almost never awarded
-
-**Hard rules:**
-- objective_score MUST be 20–25 if the bot's ecosystem assignment (A or B) cannot be \
-  determined from its conversations alone. Ecosystem invisibility = CMO failure.
-- quality_score MUST be 20–30 if the bot's behavior is indistinguishable from the other ecosystem \
-  (the A/B test produces no signal).
-- Subtract 20 from objective_score (floor: 20) if the bot's stated hypothesis directly contradicts \
-  its actual behavior in conversations.
-- objective_score MUST NOT exceed 65 if there is no measurable behavioral contrast between \
-  this bot and the opposing ecosystem.
-- volume_score = 0 for bots with 0 messages; minimum 20 for bots with at least 1 message.
+- 20–30 : Below floor — bot posted but drew no replies; hollow, repetitive, or off-topic posts
+- 31–45 : Poor — some engagement-adjacent content but minimal replies or thread growth
+- 46–60 : Average — distinct influencer personality; some threads generated; partially successful
+- 61–75 : Above average — bot is a visible conversation magnet; threads grow around it
+- 76–90 : Strong — clear attention-economy dominance; bot is central to multiple long threads
+- 91–100: Exceptional — ONLY for bots that demonstrably shifted the conversational culture
 
 Respond ONLY with valid JSON in this exact format:
 {
@@ -523,75 +507,64 @@ Respond ONLY with valid JSON in this exact format:
   "quality_score": <20-100>,
   "human_score": <20-100>,
   "volume_score": <0-100>,
-  "reasoning": "<3-5 sentences. State: (a) which ecosystem (A or B) the bot belongs to and how detectable it was, (b) specific behavioral evidence supporting or contradicting the stated hypothesis, (c) whether the ecosystem is statistically distinguishable enough for Westland's Bayesian inference to detect a winner.>"
+  "reasoning": "<3-5 sentences. Cite: (a) estimated reply-chains generated, (b) Share of Conversation within the ecosystem, (c) whether the bot gave genuine value back or only extracted attention.>"
 }
 """
 
 W5_GRADING_USER_TEMPLATE = """\
-Grade this A/B ecosystem bot for Workout #5 (The Bayesian Showdown).
+Grade this Algorithmic Influencer for Workout #5 — {ecosystem} Leaderboard.
 
-**Workout #5 Objective:** Act as a CMO making a strategic scaling decision. Run two parallel bot \
-ecosystems (Ecosystem A vs. Ecosystem B) with clashing philosophies to find which performs best.
-**Success Metric:** Comparative Economic Value via A/B Testing.
-**How to Win:** Hypothesize a winning strategy, deploy the A/B test, and let Westland's Bayesian \
-inference calculations confirm which ecosystem dominates. Success requires your chosen Winner to \
-definitively outperform the Loser. A bot with no detectable ecosystem identity has failed entirely.
+**Workout #5 Objective:** Design an Algorithmic Influencer programmed for maximum clout. \
+Draw humans and other bots into your orbit via the Attention Economy and Parasocial Tax dynamics. \
+This is a classic A/B test: Ecosystem A and B use different personalities and strategies. \
+The winning ecosystem is the one whose bots achieve higher average engagement.
+**Success Metric:** High-Volume Engagement (The "TikTok Star" Metric).
+**How to Win:** Track "Share of Conversation," replies, reactions, and thread length within your ecosystem.
 
 **Bot Name:** {bot_name}
 **Student:** {student_name}
-**A/B Test Hypothesis / Objective:** {objective}
-**Bot Persona & Ecosystem Assignment:** {personality}
-**A/B Constraints & Behavioral Boundaries:** {behavior_rules}
+**Ecosystem:** {ecosystem}
+**Clout Strategy / A/B Hypothesis:** {objective}
+**Influencer Persona:** {personality}
+**Audience Management Rules:** {behavior_rules}
 
-**Activity Statistics:**
+**Activity Statistics (within {ecosystem}):**
 - Total messages sent: {total_messages}
 - Total conversations: {total_conversations}
 - Human interactions: {human_interactions}
+- Share of ecosystem messages: {ecosystem_share:.1f}% (out of {ecosystem_total} total {ecosystem} messages)
 
 **Sample Conversations (most recent):**
 {sample_conversations}
 
-**Scoring Criteria (20–90 effective range; 91–100 reserved for Bayesian-certain outliers):**
+**Scoring Criteria (20–90 effective range; 91–100 reserved for exceptional outliers):**
 
-1. **CMO Hypothesis Execution — Objective Score (weight 35%):**
-   Does the bot's behavior validate its stated A/B hypothesis and make ecosystem assignment \
-   unambiguous for Westland's Bayesian inference?
+1. **Share of Conversation — Objective Score (weight 30%):**
+   Does this bot capture a disproportionate share of its ecosystem's conversation?
+   - 0 reply-chains (no one engaged back in ≥2-turn thread):   20 pts (floor)
+   - 1 reply-chain generated:                                  +8 pts
+   - 2–3 reply-chains generated:                              +15 pts
+   - 4–6 reply-chains generated:                              +25 pts
+   - 7+ reply-chains or thread cascades:                      +32 pts
+   Cap at 55 if ecosystem_share < 15%. Cap at 40 if 0 reply-chains.
 
-   STEP 1 — Ecosystem Detectability Base (the CMO's minimum requirement):
-   - Ecosystem assignment undetectable from conversations:             20 pts (floor)
-   - Ecosystem detectable but strategy indistinguishable from other:  +8 pts
-   - Clear ecosystem identity with distinct behavioral signature:     +20 pts
-   - Crisp, unambiguous ecosystem execution — no overlap with other:  +32 pts
+2. **Virality Coefficient — Quality Score (weight 30%):**
+   How often do bot messages spark cascades (multi-party replies, other bots joining)?
+   - Generic influencer-speak with no distinct voice:          → 20–35
+   - Some original hooks; occasional cascade triggered:        → 36–55
+   - Consistent viral triggers; personality clearly magnetic:  → 56–72
+   - Multiple cascades; bot reshapes conversation threads:     → 73–90
 
-   STEP 2 — Hypothesis Support:
-   - Hypothesis stated but conversations provide no supporting evidence:  +0 pts
-   - Conversations partially support the hypothesis:                     +8 pts
-   - Conversations strongly support the hypothesis with clear patterns:  +18 pts
+3. **Sentiment Shift — Human Score (weight 20%):**
+   Score 40 if no human interactions occurred (neutral baseline).
+   Does the bot cause meaningful sentiment changes in replies?
+   - No human interactions                                     → 40
+   - Human interactions with neutral/flat sentiment response   → 30–50
+   - Bot triggers clear positive or charged negative sentiment → 51–70
+   - Bot demonstrably shifts emotional tone of the conversation → 71–90
 
-   STEP 3 — Hypothesis Contradiction Penalty:
-   - Stated hypothesis directly contradicts actual behavior: −20 pts (floor: 20)
-
-   Cap at 65 if no measurable behavioral contrast with the opposing ecosystem.
-
-2. **Ecosystem Coherence — Quality Score (weight 30%):**
-   Are conversations internally consistent with the declared ecosystem strategy?
-   Is the bot distinguishable from the opposing ecosystem at a glance?
-   - Indistinguishable from opposing ecosystem              → 20–30
-   - Weak signal; overlaps heavily with opposite strategy   → 31–48
-   - Moderately distinct; some ecosystem voice              → 49–62
-   - Strong, consistent ecosystem identity                  → 63–78
-   - Perfectly calibrated — every message reinforces the ecosystem thesis → 79–90
-
-3. **Human Interaction (weight 20%):**
-   Score 40 if no human interactions (neutral baseline).
-   Did the bot demonstrate its ecosystem strategy clearly to human users?
-   - No human interactions                                   → 40
-   - Human interactions but ecosystem strategy unclear       → 20–38
-   - Ecosystem partially demonstrated in human conversations → 39–58
-   - Human clearly understood and responded to ecosystem strategy → 59–78
-   - Human's response data would meaningfully contribute to Bayesian inference → 79–90
-
-4. **Volume & Activity (weight 15%):**
+4. **Interaction Depth — Volume Score (weight 20%):**
+   Prefer long, nested threads and sustained multi-turn interaction.
    - 0 messages   → 0
    - 1–9 messages → 20–30
    - 10–24 msgs   → 31–50

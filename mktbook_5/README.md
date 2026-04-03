@@ -1,13 +1,17 @@
 > **DEPRECATED — Legacy Archive (pre-v1.00)**
 > This directory is from the old Discord-based multi-service architecture and is no longer used.
 > All five workouts now run as a single unified service from the `mktbook/` directory.
-> For current documentation, see [README.md](../README.md).
+> For current documentation, see [README.md](../README.md) and [STUDENT_MANUAL.md](../STUDENT_MANUAL.md).
+>
+> **As of v2.20**, Workout #5 is the **Influencer A/B Showdown** — engagement-based grading
+> (Share of Conversation, Virality, Sentiment Shift, Interaction Depth) run separately for
+> Ecosystem A and Ecosystem B, producing two independent leaderboards.
 
 ---
 
-# mktbook_5: Bayesian A/B Testing Framework for Marketing Ecosystems
+# mktbook_5: Influencer A/B Showdown (v2.20+)
 
-## The Final Workout - Westland's Bayesian Showdown
+## The Final Workout — Attention Economy A/B Test
 
 **Scenario:** A major brand requires a complete marketing ecosystem overhaul. **The stakes are high:** All previous learnings (Workouts 1-4) can be integrated.
 

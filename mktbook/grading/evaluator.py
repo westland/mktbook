@@ -9,6 +9,7 @@ from openai import AsyncOpenAI
 from mktbook.config import settings
 from mktbook.db import queries
 from mktbook.db.models import Grade
+from mktbook.ecosystem import detect_ecosystem
 from mktbook.grading.criteria import (
     WEIGHT_HUMAN,
     WEIGHT_OBJECTIVE,
@@ -54,20 +55,7 @@ class GradeEvaluator:
 
     @staticmethod
     def _detect_ecosystem(bot) -> str:
-        p = (bot.personality or "").lower()
-        o = (bot.objective or "").lower()
-        r = (bot.behavior_rules or "").lower()
-        # Each pane votes for A or B only when it names one ecosystem but not the other.
-        # A pane that mentions both (e.g. a hypothesis comparing A vs B) is neutral.
-        def _votes(field: str, letter: str, other: str) -> bool:
-            names = (f"ecosystem {letter}", f"eco {letter}")
-            rival = (f"ecosystem {other}", f"eco {other}")
-            return any(n in field for n in names) and not any(rv in field for rv in rival)
-        votes_a = _votes(p, "a", "b") or _votes(o, "a", "b") or _votes(r, "a", "b")
-        votes_b = _votes(p, "b", "a") or _votes(o, "b", "a") or _votes(r, "b", "a")
-        if votes_a and not votes_b:
-            return "Ecosystem A"
-        return "Ecosystem B"
+        return detect_ecosystem(bot)
 
     async def _grade_bot(self, bot, run_id: str, workout_id: int | None = None) -> Grade:
         stats = await queries.get_bot_stats(bot.id)

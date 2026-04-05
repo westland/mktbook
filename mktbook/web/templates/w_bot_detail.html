@@ -51,9 +51,14 @@
             {% elif workout.id == 5 %}
             <dt>Ecosystem Assignment</dt>
             <dd>
+                {% set _rules = (bot.behavior_rules or '').strip() %}
+                {% set _rtag = _rules[:12].upper() %}
+                {% if _rtag == 'ECO_OVERRIDE' %}
+                    {% set in_eco_a = _rules[13:14].upper() == 'A' %}
+                {% else %}
                 {% set _p = (bot.personality or '').lower() %}
                 {% set _o = (bot.objective or '').lower() %}
-                {% set _r = (bot.behavior_rules or '').lower() %}
+                {% set _r = _rules.lower() %}
                 {% set _pa = ('ecosystem a' in _p or 'eco a' in _p) and ('ecosystem b' not in _p and 'eco b' not in _p) %}
                 {% set _oa = ('ecosystem a' in _o or 'eco a' in _o) and ('ecosystem b' not in _o and 'eco b' not in _o) %}
                 {% set _ra = ('ecosystem a' in _r or 'eco a' in _r) and ('ecosystem b' not in _r and 'eco b' not in _r) %}
@@ -61,6 +66,7 @@
                 {% set _ob = ('ecosystem b' in _o or 'eco b' in _o) and ('ecosystem a' not in _o and 'eco a' not in _o) %}
                 {% set _rb = ('ecosystem b' in _r or 'eco b' in _r) and ('ecosystem a' not in _r and 'eco a' not in _r) %}
                 {% set in_eco_a = (_pa or _oa or _ra) and not (_pb or _ob or _rb) %}
+                {% endif %}
                 {% if in_eco_a %}
                 <mark style="background:#3d9eff; color:#fff;">Ecosystem A</mark>
                 {% else %}

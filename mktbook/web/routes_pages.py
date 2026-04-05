@@ -7,6 +7,7 @@ from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from mktbook.db import queries
+from mktbook.ecosystem import detect_ecosystem, inject_ecosystem_tag, read_ecosystem_tag, strip_ecosystem_tag
 from mktbook.telemetry import maybe_send_telemetry
 from mktbook.web.app import TEMPLATES
 from mktbook.web.auth import (
@@ -53,16 +54,8 @@ async def w_dashboard(request: Request, workout_id: int) -> HTMLResponse:
     for g in grades:
         bot = bot_map.get(g.bot_id)
         if bot:  # Only include bots from this workout
-            p = (bot.personality or "").lower()
-            o = (bot.objective or "").lower()
-            r = (bot.behavior_rules or "").lower()
-            def _pane_votes(field: str, letter: str, other: str) -> bool:
-                names = (f"ecosystem {letter}", f"eco {letter}")
-                rival = (f"ecosystem {other}", f"eco {other}")
-                return any(n in field for n in names) and not any(rv in field for rv in rival)
-            votes_a = _pane_votes(p, "a", "b") or _pane_votes(o, "a", "b") or _pane_votes(r, "a", "b")
-            votes_b = _pane_votes(p, "b", "a") or _pane_votes(o, "b", "a") or _pane_votes(r, "b", "a")
-            ecosystem = "A" if (votes_a and not votes_b) else "B"
+            eco = detect_ecosystem(bot)
+            ecosystem = "A" if eco == "Ecosystem A" else "B"
             leaderboard.append({
                 "bot_name": bot.bot_name,
                 "student_name": bot.student_name,
@@ -116,10 +109,14 @@ async def w_bot_form_new(request: Request, workout_id: int) -> HTMLResponse:
     workout = get_workout(workout_id)
     if not workout:
         return HTMLResponse("<h1>Workout not found</h1>", status_code=404)
+    ecosystem_choice = request.query_params.get("ecosystem", "").upper()
+    if ecosystem_choice not in ("A", "B"):
+        ecosystem_choice = ""
     return TEMPLATES.TemplateResponse("w_bot_form.html", {
         "request": request,
         "workout": workout,
         "bot": None,
+        "ecosystem_choice": ecosystem_choice,
     })
 
 
@@ -132,10 +129,14 @@ async def w_bot_form_submit(
     personality: str = Form(""),
     objective: str = Form(""),
     behavior_rules: str = Form(""),
+    ecosystem_choice: str = Form(""),
 ) -> HTMLResponse | RedirectResponse:
     workout = get_workout(workout_id)
     if not workout:
         return HTMLResponse("<h1>Workout not found</h1>", status_code=404)
+    # For W5, inject the ecosystem override tag (selector choice takes priority)
+    if workout_id == 5 and ecosystem_choice.upper() in ("A", "B"):
+        behavior_rules = inject_ecosystem_tag(behavior_rules, ecosystem_choice.upper())
     try:
         bot = await queries.create_bot(
             student_name=student_name,
@@ -156,12 +157,13 @@ async def w_bot_form_submit(
             "workout": workout,
             "bot": None,
             "error": error_msg,
+            "ecosystem_choice": ecosystem_choice.upper(),
             "form_data": {
                 "student_name": student_name,
                 "bot_name": bot_name,
                 "personality": personality,
                 "objective": objective,
-                "behavior_rules": behavior_rules,
+                "behavior_rules": strip_ecosystem_tag(behavior_rules),
             },
         }, status_code=422)
     fleet = request.app.state.fleet
@@ -199,10 +201,23 @@ async def w_bot_form_edit(request: Request, workout_id: int, bot_id: int) -> HTM
     bot = await queries.get_bot(bot_id)
     if not bot:
         return HTMLResponse("<h1>Bot not found</h1>", status_code=404)
+    # For W5, read current ecosystem and strip the tag from the display value
+    ecosystem_choice = ""
+    behavior_rules_display = bot.behavior_rules
+    if workout_id == 5:
+        tag = read_ecosystem_tag(bot.behavior_rules or "")
+        if tag:
+            ecosystem_choice = tag
+        else:
+            eco = detect_ecosystem(bot)
+            ecosystem_choice = "A" if eco == "Ecosystem A" else "B"
+        behavior_rules_display = strip_ecosystem_tag(bot.behavior_rules or "")
     return TEMPLATES.TemplateResponse("w_bot_form.html", {
         "request": request,
         "workout": workout,
         "bot": bot,
+        "ecosystem_choice": ecosystem_choice,
+        "behavior_rules_display": behavior_rules_display,
     })
 
 
@@ -217,7 +232,11 @@ async def w_bot_form_update(
     objective: str = Form(""),
     behavior_rules: str = Form(""),
     is_active: str = Form("off"),
+    ecosystem_choice: str = Form(""),
 ) -> RedirectResponse:
+    # For W5, inject the ecosystem override tag (selector choice takes priority)
+    if workout_id == 5 and ecosystem_choice.upper() in ("A", "B"):
+        behavior_rules = inject_ecosystem_tag(behavior_rules, ecosystem_choice.upper())
     await queries.update_bot(
         bot_id,
         student_name=student_name,

@@ -96,16 +96,22 @@
                 {% if workout.id == 5 %}
                 <td>
                     {% if item.bot %}
+                    {% set _rules = (item.bot.behavior_rules or '').strip() %}
+                    {% if _rules[:12].upper() == 'ECO_OVERRIDE' %}
+                        {% set _grade_eco_a = _rules[13:14].upper() == 'A' %}
+                    {% else %}
                     {% set _p = (item.bot.personality or '').lower() %}
                     {% set _o = (item.bot.objective or '').lower() %}
-                    {% set _r = (item.bot.behavior_rules or '').lower() %}
+                    {% set _r = _rules.lower() %}
                     {% set _pa = ('ecosystem a' in _p or 'eco a' in _p) and ('ecosystem b' not in _p and 'eco b' not in _p) %}
                     {% set _oa = ('ecosystem a' in _o or 'eco a' in _o) and ('ecosystem b' not in _o and 'eco b' not in _o) %}
                     {% set _ra = ('ecosystem a' in _r or 'eco a' in _r) and ('ecosystem b' not in _r and 'eco b' not in _r) %}
                     {% set _pb = ('ecosystem b' in _p or 'eco b' in _p) and ('ecosystem a' not in _p and 'eco a' not in _p) %}
                     {% set _ob = ('ecosystem b' in _o or 'eco b' in _o) and ('ecosystem a' not in _o and 'eco a' not in _o) %}
                     {% set _rb = ('ecosystem b' in _r or 'eco b' in _r) and ('ecosystem a' not in _r and 'eco a' not in _r) %}
-                    {% if (_pa or _oa or _ra) and not (_pb or _ob or _rb) %}
+                    {% set _grade_eco_a = (_pa or _oa or _ra) and not (_pb or _ob or _rb) %}
+                    {% endif %}
+                    {% if _grade_eco_a %}
                     <mark style="background:#3d9eff; color:#fff;">A</mark>
                     {% else %}
                     <mark style="background:#10b981; color:#fff;">B</mark>
@@ -134,9 +140,13 @@
     {% set eco_b_grades = [] %}
     {% for item in grades %}
         {% if item.bot %}
+        {% set _rules = (item.bot.behavior_rules or '').strip() %}
+        {% if _rules[:12].upper() == 'ECO_OVERRIDE' %}
+            {% if _rules[13:14].upper() == 'A' %}{% set _ = eco_a_grades.append(item) %}{% else %}{% set _ = eco_b_grades.append(item) %}{% endif %}
+        {% else %}
         {% set _p = (item.bot.personality or '').lower() %}
         {% set _o = (item.bot.objective or '').lower() %}
-        {% set _r = (item.bot.behavior_rules or '').lower() %}
+        {% set _r = _rules.lower() %}
         {% set _pa = ('ecosystem a' in _p or 'eco a' in _p) and ('ecosystem b' not in _p and 'eco b' not in _p) %}
         {% set _oa = ('ecosystem a' in _o or 'eco a' in _o) and ('ecosystem b' not in _o and 'eco b' not in _o) %}
         {% set _ra = ('ecosystem a' in _r or 'eco a' in _r) and ('ecosystem b' not in _r and 'eco b' not in _r) %}
@@ -147,6 +157,7 @@
             {% set _ = eco_a_grades.append(item) %}
         {% else %}
             {% set _ = eco_b_grades.append(item) %}
+        {% endif %}
         {% endif %}
         {% else %}
             {% set _ = eco_b_grades.append(item) %}

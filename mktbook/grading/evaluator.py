@@ -55,8 +55,17 @@ class GradeEvaluator:
     @staticmethod
     def _detect_ecosystem(bot) -> str:
         p = (bot.personality or "").lower()
+        o = (bot.objective or "").lower()
         r = (bot.behavior_rules or "").lower()
-        if "ecosystem a" in p or "eco a" in p or " a " in r:
+        # Each pane votes for A or B only when it names one ecosystem but not the other.
+        # A pane that mentions both (e.g. a hypothesis comparing A vs B) is neutral.
+        def _votes(field: str, letter: str, other: str) -> bool:
+            names = (f"ecosystem {letter}", f"eco {letter}")
+            rival = (f"ecosystem {other}", f"eco {other}")
+            return any(n in field for n in names) and not any(rv in field for rv in rival)
+        votes_a = _votes(p, "a", "b") or _votes(o, "a", "b") or _votes(r, "a", "b")
+        votes_b = _votes(p, "b", "a") or _votes(o, "b", "a") or _votes(r, "b", "a")
+        if votes_a and not votes_b:
             return "Ecosystem A"
         return "Ecosystem B"
 

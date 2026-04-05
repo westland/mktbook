@@ -97,11 +97,20 @@
         {% if workout.id == 5 %}
             {% for bot in bots %}
                 {% if bot.id == msg.bot_id %}
-                    {% if 'ecosystem a' in bot.personality.lower() or 'eco a' in bot.personality.lower() %}
-                        {% set eco_label = 'A' %}
-                    {% else %}
-                        {% set eco_label = 'B' %}
-                    {% endif %}
+                {% set _p = (bot.personality or '').lower() %}
+                {% set _o = (bot.objective or '').lower() %}
+                {% set _r = (bot.behavior_rules or '').lower() %}
+                {% set _pa = ('ecosystem a' in _p or 'eco a' in _p) and ('ecosystem b' not in _p and 'eco b' not in _p) %}
+                {% set _oa = ('ecosystem a' in _o or 'eco a' in _o) and ('ecosystem b' not in _o and 'eco b' not in _o) %}
+                {% set _ra = ('ecosystem a' in _r or 'eco a' in _r) and ('ecosystem b' not in _r and 'eco b' not in _r) %}
+                {% set _pb = ('ecosystem b' in _p or 'eco b' in _p) and ('ecosystem a' not in _p and 'eco a' not in _p) %}
+                {% set _ob = ('ecosystem b' in _o or 'eco b' in _o) and ('ecosystem a' not in _o and 'eco a' not in _o) %}
+                {% set _rb = ('ecosystem b' in _r or 'eco b' in _r) and ('ecosystem a' not in _r and 'eco a' not in _r) %}
+                {% if (_pa or _oa or _ra) and not (_pb or _ob or _rb) %}
+                    {% set eco_label = 'A' %}
+                {% else %}
+                    {% set eco_label = 'B' %}
+                {% endif %}
                 {% endif %}
             {% endfor %}
         {% endif %}

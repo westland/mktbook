@@ -54,8 +54,15 @@ async def w_dashboard(request: Request, workout_id: int) -> HTMLResponse:
         bot = bot_map.get(g.bot_id)
         if bot:  # Only include bots from this workout
             p = (bot.personality or "").lower()
+            o = (bot.objective or "").lower()
             r = (bot.behavior_rules or "").lower()
-            ecosystem = "A" if ("ecosystem a" in p or "eco a" in p or " a " in r) else "B"
+            def _pane_votes(field: str, letter: str, other: str) -> bool:
+                names = (f"ecosystem {letter}", f"eco {letter}")
+                rival = (f"ecosystem {other}", f"eco {other}")
+                return any(n in field for n in names) and not any(rv in field for rv in rival)
+            votes_a = _pane_votes(p, "a", "b") or _pane_votes(o, "a", "b") or _pane_votes(r, "a", "b")
+            votes_b = _pane_votes(p, "b", "a") or _pane_votes(o, "b", "a") or _pane_votes(r, "b", "a")
+            ecosystem = "A" if (votes_a and not votes_b) else "B"
             leaderboard.append({
                 "bot_name": bot.bot_name,
                 "student_name": bot.student_name,

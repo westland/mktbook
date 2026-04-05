@@ -95,8 +95,17 @@
                 <td>{{ "%.1f"|format(item.grade.volume_score) }}</td>
                 {% if workout.id == 5 %}
                 <td>
-                    {% if item.bot and ('ecosystem a' in item.bot.personality.lower() or 'eco a' in item.bot.personality.lower()) %}
+                    {% if item.bot %}
+                    {% set _p = item.bot.personality.lower() %}
+                    {% set _o = item.bot.objective.lower() %}
+                    {% set _r = item.bot.behavior_rules.lower() %}
+                    {% set _has_a = 'ecosystem a' in _p or 'eco a' in _p or 'ecosystem a' in _o or 'eco a' in _o or 'ecosystem a' in _r or 'eco a' in _r %}
+                    {% set _has_b = 'ecosystem b' in _p or 'eco b' in _p or 'ecosystem b' in _o or 'eco b' in _o or 'ecosystem b' in _r or 'eco b' in _r %}
+                    {% if _has_a and not _has_b %}
                     <mark style="background:#3d9eff; color:#fff;">A</mark>
+                    {% else %}
+                    <mark style="background:#10b981; color:#fff;">B</mark>
+                    {% endif %}
                     {% else %}
                     <mark style="background:#10b981; color:#fff;">B</mark>
                     {% endif %}
@@ -120,8 +129,17 @@
     {% set eco_a_grades = [] %}
     {% set eco_b_grades = [] %}
     {% for item in grades %}
-        {% if item.bot and ('ecosystem a' in item.bot.personality.lower() or 'eco a' in item.bot.personality.lower()) %}
+        {% if item.bot %}
+        {% set _p = item.bot.personality.lower() %}
+        {% set _o = item.bot.objective.lower() %}
+        {% set _r = item.bot.behavior_rules.lower() %}
+        {% set _has_a = 'ecosystem a' in _p or 'eco a' in _p or 'ecosystem a' in _o or 'eco a' in _o or 'ecosystem a' in _r or 'eco a' in _r %}
+        {% set _has_b = 'ecosystem b' in _p or 'eco b' in _p or 'ecosystem b' in _o or 'eco b' in _o or 'ecosystem b' in _r or 'eco b' in _r %}
+        {% if _has_a and not _has_b %}
             {% set _ = eco_a_grades.append(item) %}
+        {% else %}
+            {% set _ = eco_b_grades.append(item) %}
+        {% endif %}
         {% else %}
             {% set _ = eco_b_grades.append(item) %}
         {% endif %}

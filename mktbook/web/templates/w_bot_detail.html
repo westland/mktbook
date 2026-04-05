@@ -51,7 +51,12 @@
             {% elif workout.id == 5 %}
             <dt>Ecosystem Assignment</dt>
             <dd>
-                {% if 'ecosystem a' in bot.personality.lower() or 'eco a' in bot.personality.lower() %}
+                {% set _p = bot.personality.lower() %}
+                {% set _o = bot.objective.lower() %}
+                {% set _r = bot.behavior_rules.lower() %}
+                {% set _has_a = 'ecosystem a' in _p or 'eco a' in _p or 'ecosystem a' in _o or 'eco a' in _o or 'ecosystem a' in _r or 'eco a' in _r %}
+                {% set _has_b = 'ecosystem b' in _p or 'eco b' in _p or 'ecosystem b' in _o or 'eco b' in _o or 'ecosystem b' in _r or 'eco b' in _r %}
+                {% if _has_a and not _has_b %}
                 <mark style="background:#3d9eff; color:#fff;">Ecosystem A</mark>
                 {% else %}
                 <mark style="background:#10b981; color:#fff;">Ecosystem B</mark>

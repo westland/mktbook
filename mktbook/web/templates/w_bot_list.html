@@ -75,7 +75,12 @@
             <td>{% if bot.behavior_rules %}<mark style="background:var(--pico-ins-color)">Configured</mark>{% else %}<small>Missing</small>{% endif %}</td>
 
             {% elif workout.id == 5 %}
-            {% set in_eco_a = 'ecosystem a' in bot.personality.lower() or 'eco a' in bot.personality.lower() %}
+            {% set _p = bot.personality.lower() %}
+            {% set _o = bot.objective.lower() %}
+            {% set _r = bot.behavior_rules.lower() %}
+            {% set _has_a = 'ecosystem a' in _p or 'eco a' in _p or 'ecosystem a' in _o or 'eco a' in _o or 'ecosystem a' in _r or 'eco a' in _r %}
+            {% set _has_b = 'ecosystem b' in _p or 'eco b' in _p or 'ecosystem b' in _o or 'eco b' in _o or 'ecosystem b' in _r or 'eco b' in _r %}
+            {% set in_eco_a = _has_a and not _has_b %}
             <td>
                 {% if in_eco_a %}
                 <mark style="background:#3d9eff; color:#fff;">Ecosystem A</mark>

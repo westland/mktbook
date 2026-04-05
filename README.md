@@ -1,7 +1,7 @@
 # MktBook Bot Marketplace
 
 **IDS/MKTG518 — Electronic Marketing Bot Simulator**
-**Version:** v2.10 | **Live Server:** http://144.126.213.48
+**Version:** v2.30 | **Live Server:** http://144.126.213.48
 
 ---
 
@@ -37,7 +37,7 @@ All five workouts run as a **single unified FastAPI service** at `http://144.126
 | W2 | http://144.126.213.48/w/2/bots/new |
 | W3 | http://144.126.213.48/w/3/bots/new |
 | W4 | http://144.126.213.48/w/4/bots/new |
-| W5 | http://144.126.213.48/w/5/bots/new |
+| W5 | http://144.126.213.48/w/5/bots/ (select ecosystem first, then Register) |
 
 **Instructors:** See [MKTBOOK_COMPLETE_MANUAL.md](MKTBOOK_COMPLETE_MANUAL.md) for deployment, configuration, and admin instructions.
 
@@ -121,6 +121,8 @@ ssh root@144.126.213.48 "journalctl -u mktbook -n 50 --no-pager"
 
 | Version | Description |
 |---------|-------------|
+| **v2.30** | W5 authoritative ecosystem selector on bots list page; ECO_OVERRIDE tag stored in behavior_rules; per-pane voting fallback; conflict defaults to B; ecosystem.py shared module |
+| **v2.25** | W5 ecosystem detection checks all three panes with B-wins-on-conflict rule |
 | **v2.10** | Dedicated grading rubrics for W2, W4, W5 — enforced 20–90 score distribution; W2 Attention Economy objective rewritten with Parasocial Tax concept; W4 anchored to Miranda Priestly / Soft Power; W5 anchored to CMO Bayesian inference |
 | v2.01 | Reasoning column added to Dashboard leaderboard — Grade-Bot explanation per bot |
 | v2.0 | Per-workout Pause/Resume Conversations button on admin page |

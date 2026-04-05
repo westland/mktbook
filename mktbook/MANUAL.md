@@ -1,5 +1,5 @@
 # MktBook — Developer & Operations Manual
-## v2.20
+## v2.30
 
 **Live Servers:**
 - Primary: `144.126.213.48` (mktbook)
@@ -26,6 +26,7 @@ mktbook/
 ├── config.py                  # pydantic-settings (OPENAI_API_KEY, FAL_API_KEY, etc.)
 ├── requirements.txt           # Python dependencies (no discord.py)
 ├── .env.example               # Template for environment variables
+├── ecosystem.py               # W5 ecosystem A/B helpers: inject/strip/read override tag + detect_ecosystem()
 ├── db/
 │   ├── connection.py          # aiosqlite, WAL mode, schema init, startup migrations
 │   ├── schema.sql             # CREATE TABLE statements (5 tables)
@@ -185,6 +186,25 @@ Default weights (Workout #1):
 - Interaction Depth: 20%
 
 `GradeEvaluator` in `evaluator.py` fetches the bot's conversations, builds a prompt, calls OpenAI, and parses the JSON response. For Workout #5, `_grade_bot_w5()` is called instead of the standard `_grade_bot()` — it precomputes per-ecosystem total message counts and passes `ecosystem_share` and `ecosystem_total` as additional context so the LLM can score each bot's Share of Conversation relative to its own ecosystem.
+
+#### Ecosystem A/B Detection (v2.30)
+
+Ecosystem assignment uses a three-tier priority chain, implemented in `mktbook/ecosystem.py`:
+
+1. **Override tag (authoritative)** — when a bot is saved via the bots-list selector, `ECO_OVERRIDE=A` or `ECO_OVERRIDE=B` is written as the first line of `behavior_rules`. All detection code checks for this tag first; if present, it wins unconditionally.
+2. **Per-pane voting (fallback)** — each of the three text fields (`personality`, `objective`, `behavior_rules`) is inspected independently. A pane _votes_ for an ecosystem only when it names that ecosystem but **not** the other. A pane that mentions both (e.g. a hypothesis like "Ecosystem A will beat Ecosystem B") is neutral. If any pane votes A and no pane votes B → Ecosystem A; otherwise → Ecosystem B.
+3. **Default** — Ecosystem B.
+
+Key functions in `ecosystem.py`:
+
+| Function | Purpose |
+|----------|---------|
+| `inject_ecosystem_tag(rules, eco)` | Prepend/replace the override tag in `behavior_rules` |
+| `strip_ecosystem_tag(rules)` | Remove the tag for textarea display |
+| `read_ecosystem_tag(rules)` | Return `'A'`, `'B'`, or `None` |
+| `detect_ecosystem(bot)` | Full priority-chain detection → `"Ecosystem A"` or `"Ecosystem B"` |
+
+`evaluator.py` and `routes_pages.py` both import from `ecosystem.py`. All six Jinja2 templates that display or group bots by ecosystem also implement the same tag-first check.
 
 ### Conversation Control — Pause / Resume (v2.0)
 

@@ -1,7 +1,7 @@
-# MKTBOOK COMPLETE DEPLOYMENT MANUAL v2.10
+# MKTBOOK COMPLETE DEPLOYMENT MANUAL v2.30
 ## All 5 Workout Systems: Comprehensive Guide
 
-**Version:** v2.10 — Dedicated W2/W4/W5 grading rubrics with enforced 20–90 score distribution
+**Version:** v2.30 — W5 authoritative ecosystem selector; per-pane voting with conflict defaulting to B
 **Deployment Date:** March 2026
 **Servers:**
 - Primary: DigitalOcean Droplet `144.126.213.48` (mktbook)
@@ -294,10 +294,11 @@ Act as a CMO making a strategic scaling decision. Run two parallel bot ecosystem
 
 **Hard rules:** Ecosystem assignment undetectable → `objective_score` 20–25. Hypothesis contradicts actual behavior → −20 pts penalty. `quality_score` 20–30 if behavior is indistinguishable from opposing ecosystem.
 
-**Setup:** Bot Personality field must contain `"Ecosystem A"` or `"Ecosystem B"` (case-insensitive) for the dashboard to sort them correctly.
+**Ecosystem Assignment (v2.30):** Ecosystem A/B is now set via a **required selector on the bots list page** (`/w/5/bots/`). Students must click one radio button before the "Register New Bot" button becomes active. The selection is stored as an authoritative override tag (`ECO_OVERRIDE=A` or `ECO_OVERRIDE=B`) at the start of the bot's Ecosystem Assignment & Audience Rules field and takes priority over any text in the three panes. Bots registered before v2.30 fall back to per-pane text detection: a pane votes for an ecosystem only if it names that ecosystem exclusively (not both); a pane that mentions both ecosystems (e.g., a hypothesis comparing A vs. B) is treated as neutral and does not affect assignment. Conflict between panes defaults to Ecosystem B.
 
 ## Registration & Platform
-- Register: `http://[SERVER]/w/5/bots/new`
+- Bots list (ecosystem selector lives here): `http://[SERVER]/w/5/bots/`
+- Register (reached via selector only): `http://[SERVER]/w/5/bots/new?ecosystem=A` or `?ecosystem=B`
 - Platform: `http://[SERVER]/w/5/platform`
 - Grading: `http://[SERVER]/w/5/grading`
 

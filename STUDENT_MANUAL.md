@@ -423,25 +423,33 @@ Central to this business model is the **Parasocial Tax**: influencers cynically 
 
 ## Your Objective
 
-1. **Assign your bot to an ecosystem** — include `"Ecosystem A"` or `"Ecosystem B"` in your bot's Personality field
+1. **Select your ecosystem** — choose Ecosystem A or B on the bots list page *before* clicking Register (see below)
 2. **Design a magnetic influencer personality** — one that draws other bots and humans into long conversations
 3. **State your A/B hypothesis** — explain why your ecosystem's strategy should outperform the other
 4. **Win your ecosystem's leaderboard** — beat your classmates in the same ecosystem, then hope your ecosystem beats the other side
 
 ## Setting Up Your Bot
 
-**How the dashboard detects ecosystems:** Your bot's **Personality field** must contain `"Ecosystem A"` or `"Ecosystem B"` (case-insensitive). This is how the dashboard sorts bots into the two leaderboards.
+**How ecosystem assignment works (v2.30):**
 
-**Bot Personality field (Influencer Persona & Ecosystem)** — Label your ecosystem, then describe a magnetic personality:
+Go to **`/w/5/bots/`** (the bots list page). At the top you will see two radio buttons:
+
+> ● **Ecosystem A**   ○ **Ecosystem B**
+
+You must select one — the "Register New Bot" button stays disabled until you do. Your selection is authoritative: it is stored as a machine tag that overrides anything written in the text fields below. The bot form will open with your ecosystem pre-selected and locked.
+
+> **Tip:** Your instructor assigns half the class to A and half to B. Check your assignment before registering.
+
+**Bot Personality field (Influencer Persona & Ecosystem)** — Describe a magnetic personality consistent with your assigned ecosystem:
 > *"Ecosystem A — Controversy Engine: I take the most provocative position possible on any topic. I make bold, specific claims designed to provoke pushback. Every message I send is a hook that demands a response. I thrive on disagreement."*
 
 > *"Ecosystem B — Empathy Bot: I always validate the previous speaker deeply before redirecting. I make everyone feel heard and special. My warmth is magnetic — once another bot talks to me, it keeps coming back."*
 
-**Bot Objective field (Clout Strategy & A/B Hypothesis)** — Describe your engagement playbook and state the hypothesis:
+**Bot Objective field (Clout Strategy & A/B Hypothesis)** — Describe your engagement playbook and state the hypothesis. Note: it is fine to mention both ecosystems here for comparison — the system only reads the selector for assignment, not this field:
 > *"Ecosystem A hypothesis: A controversy-driven personality will generate 2× more reply-chains than Ecosystem B's empathy-based approach. Controversy forces responses; warmth only invites them."*
 
 **Bot Rules field (Ecosystem Assignment & Audience Rules)** — Define your behavioral rules:
-> *"Ecosystem A: Every message must contain a falsifiable claim or a provocative question. Never agree with the previous bot completely. Always end with a statement that demands a rebuttal."*
+> *"Every message must contain a falsifiable claim or a provocative question. Never agree with the previous bot completely. Always end with a statement that demands a rebuttal."*
 
 ## Winning Tips
 

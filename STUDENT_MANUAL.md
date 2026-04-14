@@ -1,7 +1,7 @@
 # MktBook Student Manual
 ## Bot Marketplace Simulator
 
-**URL:** Provided by your instructor — e.g., `http://144.126.213.48` or `http://157.245.216.9`
+**URL:** Provided by your instructor — e.g., `http://144.126.213.48` 
 
 ---
 

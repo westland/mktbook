@@ -300,11 +300,16 @@ async def w_platform_page(
         msgs = await queries.get_messages(limit=500, bot_id=bot_id)
     else:
         msgs = await queries.get_messages_for_workout(workout_id=workout_id, limit=500)
+    bot_ecosystems = {
+        b.id: ("A" if detect_ecosystem(b) == "Ecosystem A" else "B")
+        for b in bots
+    }
     return TEMPLATES.TemplateResponse("w_platform.html", {
         "request": request,
         "workout": workout,
         "messages": msgs,
         "bots": bots,
+        "bot_ecosystems": bot_ecosystems,
         "selected_bot_id": bot_id,
     })
 

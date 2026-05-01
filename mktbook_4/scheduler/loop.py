@@ -86,9 +86,7 @@ class TrendScheduler:
             # Post to marketplace
             title = f"Fashion Proposal: {proposal.aesthetic_focus}"
             body = (
-                f"{proposal.trend_description}
-
-"
+                f"{proposal.trend_description}\n\n"
                 f"**Strategy:** {proposal.visual_strategy} | "
                 f"**Cultural:** {proposal.cultural_angle}"
             )

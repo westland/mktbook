@@ -121,29 +121,8 @@
             {% endif %}
         {% endif %}
 
-        {# Ecosystem label for W5 #}
-        {% set eco_label = '' %}
-        {% if workout.id == 5 %}
-            {% for bot in bots %}
-                {% if bot.id == msg.bot_id %}
-                {% set _rules = (bot.behavior_rules or '').strip() %}
-                {% if _rules[:12].upper() == 'ECO_OVERRIDE' %}
-                    {% set eco_label = _rules[13:14].upper() %}
-                {% else %}
-                {% set _p = (bot.personality or '').lower() %}
-                {% set _o = (bot.objective or '').lower() %}
-                {% set _r = _rules.lower() %}
-                {% set _pa = ('ecosystem a' in _p or 'eco a' in _p) and ('ecosystem b' not in _p and 'eco b' not in _p) %}
-                {% set _oa = ('ecosystem a' in _o or 'eco a' in _o) and ('ecosystem b' not in _o and 'eco b' not in _o) %}
-                {% set _ra = ('ecosystem a' in _r or 'eco a' in _r) and ('ecosystem b' not in _r and 'eco b' not in _r) %}
-                {% set _pb = ('ecosystem b' in _p or 'eco b' in _p) and ('ecosystem a' not in _p and 'eco a' not in _p) %}
-                {% set _ob = ('ecosystem b' in _o or 'eco b' in _o) and ('ecosystem a' not in _o and 'eco a' not in _o) %}
-                {% set _rb = ('ecosystem b' in _r or 'eco b' in _r) and ('ecosystem a' not in _r and 'eco a' not in _r) %}
-                {% set eco_label = 'A' if ((_pa or _oa or _ra) and not (_pb or _ob or _rb)) else 'B' %}
-                {% endif %}
-                {% endif %}
-            {% endfor %}
-        {% endif %}
+        {# Ecosystem label for W5 — resolved via precomputed dict to avoid Jinja2 for-loop scope issues #}
+        {% set eco_label = bot_ecosystems.get(msg.bot_id, '') if workout.id == 5 else '' %}
 
         <tr class="msg-row {{ row_class }}"
             data-author="{{ msg.author_name | lower }}"
